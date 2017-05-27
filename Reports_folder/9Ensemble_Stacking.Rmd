@@ -1,0 +1,86 @@
+---
+title: "Stacking"
+author: "Group 9"
+---
+
+## Custom function for performance evaluation of the stacked models ##
+
+```{r}
+stacking_res <- function(stacked_model){
+  
+  pred.stack <- predict(stacked_model,newdata=test,type="prob")
+  yhat.stack <- ifelse(pred.stack>=0.2307,"yes","no")
+  tab.stack <- table(yhat.stack,test$return_customer)
+  score.stack <- (tab.stack[1,1]*3-(10*tab.stack[1,2]))/nrow(test)
+  
+  stack.res <- list(probabilties=pred.stack,predictions=yhat.stack,
+                    confus.mat=tab.stack,finalscore=score.stack)
+  
+  return(stack.res)}
+
+base_res <- function(prob){
+  
+  yhat.1 <- ifelse(prob>=0.2307,"yes","no")
+  tab.1 <- table(yhat.1,test$return_customer)
+  score.1 <- (tab.1[1,1]*3-(10*tab.1[1,2]))/nrow(test)
+  
+  return(score.1)
+}
+```
+
+## Stacking using Caret ##
+
+Specifying model controls
+```{r}
+control <- trainControl(method="repeatedcv", number=5, repeats = 1, savePredictions="final",
+                        classProbs=TRUE, summaryFunction = twoClassSummary, 
+                        returnData = TRUE, allowParallel = TRUE)
+
+algorithmList <- c("nnet","glm","rpart")
+
+## rpart and glm were highly correlated
+## lda. knn svmradial and gbm were tested
+
+```
+
+STacking 
+
+```{r}
+set.seed(123)
+
+models <- caretList(return_customer~., data=train, trControl=control,tuneList = list(rpart=caretModelSpec(method="rpart",tuneGrid=expand.grid(cp=0.000046)),glm=caretModelSpec(method = "glm"),nnet=caretModelSpec(method = "nnet")))
+                 
+
+model.result <- resamples(models) 
+summary(model.result)
+modelCor(model.result)
+
+stack.xgb <- caretStack(models,method="xgbTree",trControl=trainControl(method = "cv",classProbs = T),metric="ROC")
+
+stack.glm <- caretStack(models,method="glm",trControl=trainControl(method = "cv",classProbs = T),metric="ROC")
+
+stack.gbm <- caretStack(models,method="gbm",trControl=trainControl(method = "cv",classProbs = T,allowParallel = T))
+```
+
+Results of the stacking
+
+```{r}
+### Run next chunk for the custom functions
+
+p <-as.data.frame(predict(models,newdata = test))
+
+base1 <- base_res(p$rf)
+base2 <- base_res(p$nnet)
+base3 <- NA#base_res(p$glm)
+
+gbm.stacking <- stacking_res(stack.gbm)
+glm.stacking <- stacking_res(stack.glm)
+xgb.stacking <- stacking_res(stack.xgb)
+```
+
+We also attempted to build a stacked model using a random forest as a base learner
+```{r}
+# models_rf <-caretList(return_customer~., data=train, trControl=control,tuneList = list(
+#   rf = caretModelSpec(method="rf",tuneGrid=expand.grid(mtry=8))))   
+```
+

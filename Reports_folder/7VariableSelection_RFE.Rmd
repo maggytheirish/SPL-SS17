@@ -1,0 +1,79 @@
+---
+title: "Variable selection"
+author: "Group 9"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##### Model selection using RFE- Caret #####
+
+Specifying controls for tuning rfe 
+
+```{r}
+ctrl <- rfeControl(functions = rfFuncs,
+                   method = "cv",
+                   number = 5,
+                   repeats = 3,
+                   verbose = FALSE)
+```
+
+Tuning rfe 
+```{r}
+rc_id <- which( colnames(train)=="return_customer" )
+
+rfProfile <- rfe(train[,-rc_id], train$return_customer,newdata=test[,-rc_id],
+                 rfeControl = ctrl,do.trace=100)
+```
+
+
+### Visualising results ###
+
+```{r}
+rfProfile
+predictors(rfProfile)
+rfProfile$fit
+head(rfProfile$resample)
+
+ggplot(rfProfile, type=c("g","o"), metric="Accuracy") + 
+  scale_x_continuous(breaks=1:5, labels=names(train))
+
+trellis.par.set(caretTheme())
+plot1 <- plot(rfProfile, type = c("g", "o"))
+print(plot1, split=c(1,1,1,2), more=TRUE)
+```
+
+
+
+#The importance of the variables as given by the best rfe model
+
+```{r}
+selectedVars <- rfProfile$variables
+bestVar_rfe <- rfProfile$control$functions$selectVar(selectedVars, 20)
+frml_rfe <- as.formula(paste("return_customer ~" ,paste(bestVar_rfe ,collapse ="+"),sep=""))
+```
+
+Saving rfe 
+
+```{r}
+save(rfProfile,file = "rferesults.RDS")
+```
+
+
+##### Variable selection using BORUTA #####
+
+```{r}
+install.packages("Boruta")
+library("Boruta")
+
+set.seed(123)
+boruta.train <- Boruta(return_customer~., data=train,doTrace=T)
+
+summary(boruta.train$finalDecision)
+
+select_boruta <-boruta.train$finalDecision=="Confirmed"
+vars_boruta <- as.character(labels(boruta.train$finalDecision[sel]))
+```
+
+
+

@@ -1,0 +1,116 @@
+---
+title: "Random Forest"
+author: "Group 9"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##### MODEL TRAINING USING CARET ####
+
+### Loading the dataset ####
+
+
+```{r}
+train <- readRDS("train.RDS")
+test <- readRDS("test.RDS")
+```
+
+
+Setting model control parameters 
+
+```{r}
+k <- 5
+set.seed(123)
+
+model.control <- trainControl(
+  method = "cv", 
+  number = k, 
+  repeats=3,
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  allowParallel = TRUE
+)
+
+rf.parms <- expand.grid(mtry = 1:10)
+```
+
+Model training using caret
+```{r}
+rf.caret <- train(return_customer~., data = train,  
+                  method = "rf", ntree =500, tuneGrid = rf.parms, 
+                  metric = "ROC", trControl = model.control,verboseIter=T,do.trace=100)
+```
+
+
+Performance metrics and results 
+
+```{r}
+rf.caret$results
+rf.caret$finalModel
+
+plot(rf.caret)
+```
+
+
+Predict the outcomes of the test set with the custom results function
+
+```{r}
+res.rf.caret <- results(rf.caret)
+```
+
+Selecting important variables
+
+```{r}
+imp <- varImp(rf.caret)$importance
+save(imp,file = "impvarcaret.RDS")
+
+imp$variable <- rownames(imp)
+bestvars <- as.vector(row.names(imp[imp$Overall>=mean(imp$Overall),]))
+
+bestvars <- gsub("email_domaingmx.de","email_domain",bestvars)
+bestvars <- gsub("form_of_addressMr","form_of_address",bestvars)
+bestvars <- gsub("newsletter1","newsletter",bestvars)
+bestvars <- bestvars[-c(5,6)]
+
+frml_rfvars <- as.formula(paste("return_customer ~" ,paste(bestvars,collapse ="+"),sep=""))
+```
+
+
+
+### FINAL RANDOM FOREST ####
+
+## Run random forest again using the best parameter options as obtained from the model training
+
+Optimal parameters ntree == 500, mtry==8  
+
+```{r}
+rf_full <- randomForest(return_customer~.,data=train,ntree=500,mtry=8,importance=T, do.trace=100)
+
+res.rf_full <- results(rf_full)
+
+res.rf_full$finalscore
+res.rf_full$auc
+
+```
+
+
+With variables selected from Varimp function
+
+```{r}
+rf_selected<- randomForest(frml_rfvars,data=train,ntree=500,mtry=7,importance=T, do.trace=100)
+
+res.rf_selected <- results(rf_selected)
+
+res.rf_selected$finalscore
+res.rf_selected$auc
+```
+
+Saving results
+
+```{r}
+save(rf.caret,file = "rfcaretres.RDS")
+```
+

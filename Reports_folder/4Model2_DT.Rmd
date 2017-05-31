@@ -1,0 +1,95 @@
+---
+title: "Decision trees"
+author: "Group 9"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading train and test sets
+```{r}
+train <- readRDS("train.RDS")
+test <- readRDS("test.RDS")
+```
+
+
+#### Full decision tree ####
+
+```{r}
+dt.full <- rpart(return_customer ~ ., data = train) ## Using default parameter values
+results(dt.full)$finalscore
+
+printcp(dt) ## Find the cp value with the least relative error
+```
+
+
+### Training the tree using caret to find the optimal value of cp
+
+```{r}
+dt.ctrl <- trainControl(method = "cv",number=2,repeats = 0,
+                        classProbs = T,savePredictions =T) 
+
+dt.caret <- train(return_customer~.,data=train,method="rpart",
+                  metric="ROC",
+                  trControl=dt.ctrl)
+
+summary(dt.caret)
+dt.caret$pred
+results(dt.caret)
+```
+
+
+# Optimal value of cp=0.0004476276
+
+### Manual training
+
+Caret only allows us to modify the cp value,manual training was done to find the optimal minsplit
+
+```{r}
+dt.param <- expand.grid(minsplit=c(1:50),cp=seq(0.00001,6.0749e-04,0.00001))
+k <- 5
+results.dt <- matrix(data=NA, nrow =k ,ncol=nrow(dt.param))
+folds <- cut(1:nrow(train),breaks = k,labels = F)
+
+for(j in 1:nrow(dt.param)){
+  for(i in 1:k){
+    
+    cv.idx <- which(folds==i)
+    cv.val <- train[cv.idx,]
+    cv.train <- train[-cv.idx,] 
+    dt.train <- rpart(return_customer ~ ., data = cv.train,
+                      minsplit=dt.param[j,1],cp=dt.param[j,2])  
+    
+    results.dt[i,j] <- results(dt.train,newdata = cv.val)$finalscore
+    
+  }}
+
+
+```
+
+## Final model - Optimal parameters 
+
+```{r}
+dt <- rpart(return_customer ~ ., data = train,cp=0.00046 ,xval=10)
+
+pred.dt <- results(dt)
+pred.dt$confusion_matrix
+pred.dt$finalscore
+
+printcp(dt)
+summary(dt)
+rpart.plot(dt)
+```
+
+
+## Trying dt with loss function
+
+```{r}
+dt.loss <- rpart(return_customer ~ .,data=train,parms=list(split="information", loss=matrix(c(0,10,3,0), byrow=TRUE, nrow=2)),minsplit=47,cp=0.00046)
+
+pred.dt.loss <- results(dt.loss)
+pred.dt.loss$finalscore
+
+```
+

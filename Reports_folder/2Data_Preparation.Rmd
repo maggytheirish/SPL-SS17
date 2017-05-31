@@ -1,0 +1,382 @@
+---
+title: "Data preparation"
+author: "Group-9"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Data preparation ## 
+
+The following code loads the respective datasets and reformats the variables into the appropriate datatype
+
+
+Loading required packages 
+```{r}
+if (!require("rstudioapi")) install.packages("rstudioapi"); library("rstudioapi")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+source("Helperfunction.R")
+
+list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
+                      "caret","randomForest","e1071","pROC", "tidyr", "klaR", 
+                      "caretEnsemble","car","mlbench","Hmisc", "ggvis", "mlr")
+
+sapply(list.of.packages,load_packages)
+```
+
+Loading the datasets 
+```{r}
+# Specify file path and parts of the file name to match
+
+data.list<-load.multiple.files(path=getwd(),pattern = "assignment_BADS_WS1617_*csv*")
+
+class1 <-data.list$assignment_BADS_WS1617_class.csv
+known1 <-data.list$assignment_BADS_WS1617_known.csv
+
+```
+
+Replace apparent typos - replace year "4746" with "2013"(mode) 
+```{r}
+# Class dataset
+class1$deliverydate_estimated <- gsub("4746", "2013", class1$deliverydate_estimated)
+
+# Known dataset
+known1$deliverydate_estimated <- gsub("4746", "2013", known1$deliverydate_estimated)
+known1$deliverydate_actual <- gsub("4746", "2013", known1$deliverydate_actual)
+```
+
+Reformat variables to the correct data type
+```{r}
+# Date variables
+date_var <- c("order_date","account_creation_date","deliverydate_actual","deliverydate_estimated")
+class1[,date_var] <- lapply(class1[,date_var], ymd)
+
+known1[,date_var] <- lapply(known1[,date_var], ymd)
+
+# Factor variables
+varlist <- c("ID","title","newsletter","model","delivery","coupon","giftwrapping","referrer","cost_shipping")
+class1[,varlist] <- lapply(class1[,varlist],factor)
+sapply(class1,class)
+
+known1[,varlist] <-lapply(known1[,varlist],factor)
+sapply(known1,class)
+
+known1$return_customer <- factor(known1$return_customer) 
+```
+
+Delete empty/unnecessary columns (points_redeemed, ID, hardware_count) 
+```{r}
+# Class dataset
+class1$points_redeemed<-NULL
+class1$hardware_count <- NULL
+class1$ID <- NULL
+
+# Known dataset
+known1$points_redeemed<-NULL
+known1$hardware_count <- NULL
+known1$ID <- NULL
+```
+
+This script cleans the dataset by removing outliers and NA values 
+
+## Treatment of missing values ##
+
+Create dummy variables for variables with missing values
+```{r}
+# missing variables
+class1[,c("deliverydate_estimated_miss",
+          "weight_miss")] <-lapply(class1[,c("deliverydate_estimated","weight")],is.na)
+
+known1[,c("deliverydate_estimated_miss",
+          "weight_miss")] <-lapply(known1[,c("deliverydate_estimated","weight")],is.na)
+```
+
+## Check variance of predictors ##
+```{r}
+# Check for near zero variance predictors using function from caret package
+nzv <- nearZeroVar(known1, saveMetrics= TRUE)
+print(nzv)
+
+# Variable "deliverydate_estimated_miss" appears to be a near zero variance predictor and should be dropped
+class1$deliverydate_estimated_miss <- NULL
+known1$deliverydate_estimated_miss <- NULL
+```
+
+## Replace missing values in existing variables ##
+
+Replace NAs in form_of_address
+```{r}
+# Class dataset
+class1$form_of_address <- factor(class1$form_of_address, levels=c(levels(class1$form_of_address), "missing"))
+form_na <- is.na(class1$form_of_address)
+class1[form_na,"form_of_address"]<- "missing"
+
+# Known dataset
+known1$form_of_address <- factor(known1$form_of_address, levels=c(levels(known1$form_of_address), "missing"))
+form_na <- is.na(known1$form_of_address)
+known1[form_na,"form_of_address"]<- "missing"
+```
+
+Replace NA in deliverydate_actual with deliverydate_estimated
+```{r}
+# Class dataset
+missing_delivery_c <- class1[is.na(class1$deliverydate_actual),]
+missing_delivery_c$deliverydate_actual <- missing_delivery_c$deliverydate_estimated
+class1[is.na(class1$deliverydate_actual), 
+       "deliverydate_actual"] <- missing_delivery_c$deliverydate_actual
+
+# Known dataset
+missing_delivery_k <- known1[is.na(known1$deliverydate_actual),]
+missing_delivery_k$deliverydate_actual <- missing_delivery_k$deliverydate_estimated
+known1[is.na(known1$deliverydate_actual), 
+       "deliverydate_actual"] <- missing_delivery_k$deliverydate_actual
+```
+
+Replacing the missing values in postcode_delivery 
+```{r}
+# Class dataset
+class1$postcode_delivery <- as.integer(class1$postcode_delivery)
+class1$postcode_invoice <- as.integer(class1$postcode_invoice)
+
+my.na_class<-is.na(class1$postcode_delivery)
+class1$postcode_delivery[my.na_class]<-class1$postcode_invoice[my.na_class] 
+
+# Known dataset
+known1$postcode_delivery <- as.integer(known1$postcode_delivery)
+known1$postcode_invoice <- as.integer(known1$postcode_invoice)
+
+my.na_known<-(known1$postcode_delivery=="1")
+known1$postcode_delivery[my.na_known]<-known1$postcode_invoice[my.na_known]
+```
+
+Replace NAs in advertising_code
+```{r}
+# Class dataset
+levels(class1$advertising_code) <- sub("^$", "default", levels(class1$advertising_code))
+
+# Known dataset
+levels(known1$advertising_code)<-sub("^$", "default", levels(known1$advertising_code))
+```
+
+Impute weight variable with the mode value (=0) and convert units into kg
+```{r}
+options(max.print=52000) #This may be needed to run the following
+
+# Known dataset
+countweightk <- table(known1$weight) # Checking the distribution of the weight
+names(countweightk)[countweightk == max(countweightk)] # Getting the mode
+known1$weight[is.na(known1$weight)] <- 0 # Imputing the mode in place of NA's
+known1$weight <- known1$weight/1000
+
+# Class dataset
+countweightc <- table(class1$weight) # Checking the distribution of the weight
+names(countweightc)[countweightk == max(countweightk)] # Getting the mode
+class1$weight[is.na(class1$weight)] <- 0 # Imputing the mode in place of NA's
+class1$weight <- class1$weight/1000
+```
+
+## Check and remove outliers ##
+
+We used the following code to check for and remove outliers. However, it did not have an
+effect on the tree based models that we ultimately used.
+
+Boxplots to check the distribution of variables
+```{r}
+#sapply(class1[, 24:37], boxplot)
+```
+
+Find the quartile values and the inter-quantile-range IQR for the examined variables
+```{r}
+#lower.quartile_i_k <- as.numeric(summary(known1$item_count)[2])
+#upper.quartile_i_k <- as.numeric(summary(known1$item_count)[5])
+#IQR_i_k <- upper.quartile_i_k - lower.quartile_i_k
+```
+
+Calculate the upper bound values
+```{r}
+#upper.bound_i_k <- upper.quartile_i_k + 1.5*IQR_i_k
+#message("Upper bound on item_count is ", upper.bound_i_k )
+```
+
+Use logical indexing to identify outliers and replace with the upper bound
+```{r}
+# item_count
+#known1$item_count[ known1$item_count > upper.bound_i_k ] <- upper.bound_i_k
+
+# imported_count
+#imported_out <-rm.outlier(known1$imported_count, fill = FALSE, 
+                          #median = FALSE, opposite = FALSE)
+
+# paperback_count
+#paperback_o<-rm.outlier(known1$paperback_count, fill = FALSE, 
+                        #median = FALSE, opposite = FALSE)
+
+# schoolbook_count
+#schoolbook_o<-rm.outlier(known1$schoolbook_count, fill = FALSE, 
+                         #median = FALSE, opposite = FALSE)
+
+# audiobook_count
+#audiobook_o<- rm.outlier(known1$audiobook_count, fill = FALSE, 
+                         #median = FALSE, opposite = FALSE)
+
+# other_count
+#other_o<-rm.outlier(known1$other_count, fill = FALSE, 
+                    #median = FALSE, opposite = FALSE)
+```
+
+## Feature Engineering ##
+#(create difference variables, separate date variables, binning, WOE)
+
+Create delivery_date_diff variable
+```{r}
+class1$deliverydate_diff <- class1$deliverydate_actual - class1$deliverydate_estimated
+known1$deliverydate_diff <- known1$deliverydate_actual - known1$deliverydate_estimated
+```
+
+Create dummy variable for whether customer has an account or not
+```{r}
+class1$account <- !is.na(class1$account_creation_date)
+known1$account <- !is.na(known1$account_creation_date)
+```
+
+Create variable for length of account 
+```{r}
+class1$account_length <- class1$order_date - class1$account_creation_date
+known1$account_length <- known1$order_date - known1$account_creation_date
+
+# Impute NA values as "-1"
+class1$account_length[is.na(class1$account_length)] <- -1
+known1$account_length[is.na(known1$account_length)] <- -1
+```
+
+Convert difftime variables to integers
+```{r}
+known1$deliverydate_diff <- as.integer(known1$deliverydate_diff)
+known1$account_length <- as.integer(known1$account_length)
+
+class1$deliverydate_diff <- as.integer(class1$deliverydate_diff)
+class1$account_length <- as.integer(class1$account_length)
+```
+
+
+Separate order_date, deliverydate_actual and deliverydate_estimated into year, month, day columns
+```{r}
+# Class dataset
+class1 <- separate(class1, order_date, into = c("order_year", "order_month", 
+                                                "order_day"), sep="-")
+
+class1 <- separate(class1, deliverydate_actual, into = c("deliveryactual_year", 
+                                                         "deliveryactual_month",
+                                                         "deliveryactual_day"), sep="-")
+
+class1 <- separate(class1, deliverydate_estimated, into = c("deliveryestimated_year",
+                                                            "deliveryestimated_month",
+                                                            "deliveryestimated_day"),
+                   sep="-")
+
+# Known dataset
+known1 <- separate(known1, order_date, into = c("order_year", "order_month", 
+                                                "order_day"), sep="-")
+
+known1 <- separate(known1, deliverydate_actual, into = c("deliveryactual_year",
+                                                         "deliveryactual_month",
+                                                         "deliveryactual_day"), sep="-")
+
+known1 <- separate(known1, deliverydate_estimated, into = c("deliveryestimated_year",
+                                                            "deliveryestimated_month",
+                                                            "deliveryestimated_day"), 
+                   sep="-")
+
+# Convert additional variables above from character back into numeric
+date_num <- c("order_year","order_month","order_day",
+              "deliveryactual_year","deliveryactual_month","deliveryactual_day", 
+              "deliveryestimated_year","deliveryestimated_month","deliveryestimated_day")
+
+known1[,date_num] <- lapply(known1[,date_num], as.integer)
+class1[,date_num] <- lapply(class1[,date_num], as.integer)
+```
+
+Delete account_creation_date variable
+```{r}
+class1$account_creation_date <- NULL
+known1$account_creation_date <- NULL
+```
+
+Bin postcode variables
+```{r}
+# Known dataset 
+binningk<-function(num.vector){
+  output<-cut(num.vector, breaks=c(0,10,20,30,40,50,60,70,80,90,100,104), include.lowest = TRUE, labels=paste0("level",1:11) )
+  num.vector<-return(output)   
+}
+
+# Class dataset
+binningc<-function(num.vector){
+  output<-cut(num.vector, breaks=c(0,10,20,30,40,50,60,70,80,90,99), include.lowest = TRUE, labels=paste0("level",1:10) )
+  num.vector<-return(output)   
+}
+
+# Class dataset
+class1$postcode_invoice<-binningc(class1$postcode_invoice)
+class1$postcode_delivery<-binningc(class1$postcode_delivery)
+
+# Known dataset
+known1$postcode_invoice<-binningk(known1$postcode_invoice)
+known1$postcode_delivery<-binningk(known1$postcode_delivery)
+```
+
+Create empty factor variable in Class dataset
+```{r}
+#create class1$return_customer as a factor
+class1$return_customer<- factor(0)
+```
+
+WOE for advertising_code
+```{r}
+# Known dataset
+woe.object <- woe(return_customer ~ advertising_code, data =known1, zeroadj = 0.5)
+known1[, c("woe.advertising_code")] <- woe.object$xnew
+known1[, c("advertising_code")] <- NULL
+
+# Class dataset
+class1$advertising_code<-recode(class1$advertising_code,"'default'=-0.004913810;'AA'=0;'AB'= 0.210694778; 'AC'=-0.766731954; 'AD'=-0.766731954; 'AE'=0.270511389; 'AF'= 0.486031015; 'AG'=0.331880335; 'AH'=0.341096990; 'AI'=2.066481390; 'AJ'=-0.073584773; 'AK'=-0.160596150; 'AL'=-0.073584773; 'AM'=-1.459879134; 'AO'=0.149558778; 'AP'= 0.202202512; 'AQ'=0.486031015; 'AR'=0.965838644; 'AS'=-0.766731954; 'AT'= 0.006457935; 'AU'=-0.073584773; 'AV'=-0.543588402; 'AW'= 0.244868958; 'AX'= -0.890399617; 'AY' = -0.766731954; 'AZ' = 1.052426490; 'BA' = 0.486031015; 'BB' = 0.619562407; 'BC'=1.584643303; 'BD' = 0.057378025; 'BE' = -0.073584773; 'BF' = 1.484559845; 'BG' = -0.766731954; 'BH'= -0.073584773; 'BI'= 1.835957732; 'BK'= -0.361266846; 'BL'= 0.842705959; 'BM' = -0.543588402; 'BN'=-2.153026315; 'BO'=-0.218766783; 'BQ'= -0.074188820; 'BR'= -0.048478852; 'BS' =  0.619562407; 'BT'= -0.244856494; 'BU' = -0.766731954; 'BV'= -0.073584773; 'BW'=-0.766731954; 'BX'=-2.376169866; 'BY'=  1.025027516; 'BZ'= -0.147692745; 'CA'=  0.192891903",  as.factor.result=FALSE)
+
+class1[, c("woe.advertising_code")] <- class1$advertising_code
+class1[, c("advertising_code")] <- NULL
+```
+
+Save current dataset 
+```{r}
+saveRDS(class1, "class1_clean4.RDS")
+saveRDS(known1, "known1_clean4.RDS")
+```
+
+
+Creating train and test datasets
+```{r}
+set.seed(123)
+
+idx.train <- createDataPartition(y = known1$return_customer, p = 0.8, list = FALSE)
+
+# Assign the train and test set by indices
+train <- known1[idx.train, ]
+test <-  known1[-idx.train, ]
+```
+
+Change factor levels to "yes" and "no"
+
+```{r}
+train$return_customer <- factor(train$return_customer, levels = c(0,1), labels = c("no", "yes"))
+test$return_customer <- factor(test$return_customer, levels = c(0,1), labels = c("no", "yes"))
+```
+
+Saving test and train sets
+
+```{r}
+saveRDS(train, "train.RDS")
+saveRDS(test, "test.RDS")
+```
+

@@ -1,0 +1,82 @@
+---
+title: "Data preparation_store"
+author: "Margarita"
+date: "29/05/2017"
+output: html_document
+---
+Loading the required packages
+```{r}
+load_packages  <- function(p){
+  
+  for(i in seq_along(p)) {
+    if(!require(p[i], character.only=TRUE)) {
+      install.packages(p[i])}
+      library(p[i], character.only=TRUE)
+  }
+
+}
+
+list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
+                      "caret","randomForest","e1071","pROC", "tidyr", "klaR", 
+                      "car")
+
+sapply(list.of.packages,load_packages)
+```
+
+Loading the dataset
+```{r}
+store<-read.csv("store.csv", header=T, sep=",")
+train<-read.csv("train.csv", header=T, sep=",")
+```
+
+Turning numeric variables into factor variables
+```{r}
+varlist<-c("Store", "StoreType", "Assortment", "Promo2")
+store[,varlist]<-lapply(store[,varlist], factor)
+```
+Starting date for Promo2
+```{r}
+store$Promo2SinceDate<-as.Date(with(store, paste(Promo2SinceYear,Promo2SinceWeek,1, sep="-")),"%Y-%U-%u")
+```
+Starting date for Competition (assuming it's from the first day of the month)
+```{r}
+store$CompetitionSinceDate<-as.Date(paste(store$CompetitionOpenSinceYear,store$CompetitionOpenSinceMonth,1, sep="-"),format="%Y-%m-%d")
+```
+Delete unnecessary columns
+```{r}
+store$CompetitionOpenSinceMonth<-NULL
+store$CompetitionOpenSinceYear<-NULL
+store$Promo2SinceWeek<-NULL
+store$Promo2SinceYear<-NULL
+```
+Merging two datasets by the common variable
+```{r}
+total<-merge(store, train, by="Store")
+total<-total[,c("Store", "DayOfWeek", "Date", "Sales","Customers", "Open", "Promo", "StateHoliday", "SchoolHoliday", "StoreType", "Assortment", "CompetitionDistance", "Promo2", "PromoInterval","Promo2SinceDate", "CompetitionSinceDate")]
+```
+#Replacing missing competition variables
+```{r}
+CompetitionDateMissing<-total[is.na(total$CompetitionSinceDate),]
+CompetitionDateMissing$CompetitionSinceDate<-CompetitionDateMissing$Date
+total[is.na(total$CompetitionSinceDate),"CompetitionSinceDate"]<-CompetitionDateMissing$CompetitionSinceDate
+total$CompetitionSinceDate<-as.Date(total$CompetitionSinceDate)
+total$Date<-as.Date(total$Date)
+```
+Create dummy variable for whether competition is present on a given day
+```{r}
+#indx<-as.Date(total$Date)<total$CompetitionSinceDate
+total$CompetitionPresent<-ifelse(total$Date<total$CompetitionSinceDate,0,1)
+total$CompetitionPresent<-as.factor(total$CompetitionPresent)
+#total$CompetitionPresent[indx & !is.na(indx)]<- 0
+#total$CompetitionPresent[indx & is.na(indx)]<- 1
+```
+Create a dummy variable for whether there's a Promo 2 on a given day
+```{r}
+#Think about how to combine the starting date and interval
+```
+
+```{r}
+summary(total)
+```
+
+

@@ -57,8 +57,9 @@ total<-total[,c("Store", "DayOfWeek", "Date", "Sales","Customers", "Open", "Prom
 #Replacing missing competition variables
 ```{r}
 CompetitionDateMissing<-total[is.na(total$CompetitionSinceDate),]
+CompetitionDateMissing<-CompetitionDateMissing[!is.na(CompetitionDateMissing$CompetitionDistance),]
 CompetitionDateMissing$CompetitionSinceDate<-CompetitionDateMissing$Date
-total[is.na(total$CompetitionSinceDate),"CompetitionSinceDate"]<-CompetitionDateMissing$CompetitionSinceDate
+total[is.na(total$CompetitionSinceDate) & !is.na(total$CompetitionDistance),"CompetitionSinceDate"]<-CompetitionDateMissing$CompetitionSinceDate
 total$CompetitionSinceDate<-as.Date(total$CompetitionSinceDate)
 total$Date<-as.Date(total$Date)
 ```

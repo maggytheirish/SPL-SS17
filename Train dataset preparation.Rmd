@@ -10,11 +10,18 @@ varlist<-c("Store","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday"
 train[,varlist]<-lapply(train[,varlist], factor)
 ```
 
-Change date into a date format
+Change date into a date format and separate in 3 columns
 ```{r}
-train$Date<-as.Date(paste(train$Date,sep="-"), format= "%Y-%m-%d")
+library(tidyr)
+train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
+train <- separate(train, Date, into = c("Year", "Month", 
+                                                "Day"), sep="-")
+date_num<-c("Year", "Month", "Day")
+train[,date_num]<-lapply(train[,date_num],as.integer)
 ```
+
 ```{r}
 sapply(train,class)
+summary(train)
 ```
 

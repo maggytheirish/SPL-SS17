@@ -27,6 +27,7 @@ Loading the dataset
 ```{r}
 store<-read.csv("store.csv", header=T, sep=",")
 train<-read.csv("train.csv", header=T, sep=",")
+#test<-read.csv("test.csv", header=T, sep=",")
 ```
 
 Turning numeric variables into factor variables
@@ -34,6 +35,11 @@ Turning numeric variables into factor variables
 varlist<-c("Store", "StoreType", "Assortment", "Promo2")
 store[,varlist]<-lapply(store[,varlist], factor)
 ```
+Replacing a typo in CompetitionOpenSinceYear
+```{r}
+store$CompetitionOpenSinceYear<-gsub("1900", "2010", store$CompetitionOpenSinceYear)
+```
+
 Starting date for Promo2
 ```{r}
 store$Promo2SinceDate<-as.Date(with(store, paste(Promo2SinceYear,Promo2SinceWeek,1, sep="-")),"%Y-%U-%u")
@@ -76,8 +82,22 @@ Create a dummy variable for whether there's a Promo 2 on a given day
 #Think about how to combine the starting date and interval
 ```
 
+Change date into a date format and separate in 3 columns
+```{r}
+library(tidyr)
+total$Date<-as.Date(paste(total$Date,sep="-"),format= "%Y-%m-%d")
+total <- separate(total, Date, into = c("Year", "Month", 
+                                                "Day"), sep="-")
+date_num<-c("Year", "Month", "Day")
+total[,date_num]<-lapply(total[,date_num],as.integer)
+```
+
 ```{r}
 summary(total)
 ```
 
-
+Clustering stores by sales
+```{r}
+totalCluster <- kmeans(total[,c(6)],10,algorithm="Lloyd", iter.max=1000)
+table(data.frame(total$Store, totalCluster$cluster))
+```

@@ -1,0 +1,20 @@
+---
+title: "Train dataset preparation"
+author: "Margarita"
+date: "03/06/2017"
+output: html_document
+---
+```{r}
+train<-read.csv("train.csv", header=T, sep=",")
+varlist<-c("Store","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday")
+train[,varlist]<-lapply(train[,varlist], factor)
+```
+
+Change date into a date format
+```{r}
+train$Date<-as.Date(paste(train$Date,sep="-"), format= "%Y-%m-%d")
+```
+```{r}
+sapply(train,class)
+```
+

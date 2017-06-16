@@ -41,6 +41,7 @@ train$Date<- as.factor(train$Date)
 set.seed(123)
 idx <- createDataPartition(train$Date,p=0.05,list = F)
 new_train <- train[idx,]
+new_train$Date<-as.Date(new_train$Date)
 
 ## Check the datasets
 summary(new_train)
@@ -50,12 +51,16 @@ summary(test)
 Store dataset
 Turning numeric variables into factor variables
 ```{r}
-varlist_store<-c("Store", "StoreType", "Assortment", "Promo2")
+varlist_store<-c("StoreType", "Assortment", "Promo2")
 store[,varlist_store]<-lapply(store[,varlist_store], factor)
 ```
 Replacing a typo in CompetitionOpenSinceYear
 ```{r}
 store$CompetitionOpenSinceYear<-gsub("1900", "2010", store$CompetitionOpenSinceYear)
+```
+Replacing empty category in PromoInterval with "missing"
+```{r}
+store$PromoInterval<-sub("^$", "missing", store$PromoInterval)
 ```
 
 Starting date for Promo2
@@ -106,6 +111,7 @@ train_set[is.na(train_set$CompetitionSinceDate) & !is.na(train_set$CompetitionDi
 train_set$CompetitionSinceDate<-as.Date(train_set$CompetitionSinceDate)
 
 ```
+
 Create dummy variable for whether competition is present on a given day
 ```{r}
 #indx<-as.Date(train_set$Date)<train_set$CompetitionSinceDate
@@ -113,8 +119,14 @@ train_set$CompetitionPresent<-ifelse(train_set$Date<train_set$CompetitionSinceDa
 train_set$CompetitionPresent<-as.factor(train_set$CompetitionPresent)
 test_set$CompetitionPresent<-ifelse(test_set$Date<test_set$CompetitionSinceDate,0,1)
 test_set$CompetitionPresent<-as.factor(test_set$CompetitionPresent)
-#train_set$CompetitionPresent[indx & !is.na(indx)]<- 0
-#train_set$CompetitionPresent[indx & is.na(indx)]<- 1
+# Train set
+train_set$CompetitionPresent <- factor(train_set$CompetitionPresent, levels=c(levels(train_set$CompetitionPresent), "missing"))
+form_na <- is.na(train_set$CompetitionPresent)
+train_set[form_na,"CompetitionPresent"]<- "missing"
+#Test set
+test_set$CompetitionPresent <- factor(test_set$CompetitionPresent, levels=c(levels(test_set$CompetitionPresent), "missing"))
+form_na <- is.na(test_set$CompetitionPresent)
+test_set[form_na,"CompetitionPresent"]<- "missing"
 ```
 
 Change date into a date format and separate in 3 columns
@@ -140,6 +152,13 @@ summary(test_set)
 ```
 ```{r}
 test_set$Customers<-NULL
+train_set$Customers<-NULL
 test_set$Sales<-NULL
 ```
+
+```{r}
+test_set$Store<-as.integer(test_set$Store)
+train_set$Store<-as.integer(train_set$Store)
+```
+
 

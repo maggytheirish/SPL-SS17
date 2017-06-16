@@ -1,0 +1,9 @@
+---
+title: "Linear regression"
+author: "Margarita"
+date: "16/06/2017"
+output: html_document
+---
+```{r}
+lr<- lm(Sales~ .,data = train_set)
+summary(lr)

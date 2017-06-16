@@ -5,23 +5,67 @@ date: "03/06/2017"
 output: html_document
 ---
 ```{r}
+
+## Read in original dataset
 train<-read.csv("train.csv", header=T, sep=",")
-varlist<-c("Store","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday")
-train[,varlist]<-lapply(train[,varlist], factor)
+
+## Creating separate test set 
+train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
+testdate <- train$Date>="2015-07-20" #Selecting the last 10 days for forecasting
+test <- train[testdate==T,]
+train <- train[testdate==F,] # remove test observations
+
+## Creating train dataset
+library(caret)
+train$Date<- as.factor(train$Date)
+set.seed(123)
+idx <- createDataPartition(train$Date,p=0.05,list = F)
+new_train <- train[idx,]
+
+## Check the datasets
+summary(new_train)
+summary(test)
+```
+
+Data Cleaning
+```{r}
+
+## Change the data type 
+str(new_train)
+str(test)
+varlist<-c("DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday") # "Store" , keep store as integer for now 
+new_train[,varlist]<-lapply(new_train[,varlist], factor)
+test[,varlist]<-lapply(test[,varlist], factor)
 ```
 
 Change date into a date format and separate in 3 columns
 ```{r}
 library(tidyr)
-train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
-train <- separate(train, Date, into = c("Year", "Month", 
+new_train$Date<-as.Date(paste(new_train$Date,sep="-"),format= "%Y-%m-%d")
+new_train <- separate(new_train, Date, into = c("Year", "Month", 
                                                 "Day"), sep="-")
 date_num<-c("Year", "Month", "Day")
-train[,date_num]<-lapply(train[,date_num],as.integer)
+new_train[,date_num]<-lapply(new_train[,date_num],as.integer)
+
+## Test set
+
+test$Date<-as.Date(paste(test$Date,sep="-"),format= "%Y-%m-%d")
+test <- separate(test, Date, into = c("Year", "Month", 
+                                                "Day"), sep="-")
+test[,date_num]<-lapply(test[,date_num],as.integer)
+
 ```
 
 ```{r}
-sapply(train,class)
-summary(train)
+sapply(new_train,class)
+summary(new_train)
+```
+
+Merging the datasets 
+```{r}
+train_set<-merge(store, new_train, by="Store")
+test_set<-merge(store, test, by="Store")
+
+summary(train_set)
 ```
 

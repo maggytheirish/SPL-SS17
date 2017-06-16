@@ -26,14 +26,12 @@ sapply(list.of.packages,load_packages)
 Loading the dataset
 ```{r}
 store<-read.csv("store.csv", header=T, sep=",")
-train<-read.csv("train.csv", header=T, sep=",")
-#test<-read.csv("test.csv", header=T, sep=",")
 ```
 
 Turning numeric variables into factor variables
 ```{r}
-varlist<-c("Store", "StoreType", "Assortment", "Promo2")
-store[,varlist]<-lapply(store[,varlist], factor)
+varlist_store<-c("Store", "StoreType", "Assortment", "Promo2")
+store[,varlist]<-lapply(store[,varlist_store], factor)
 ```
 Replacing a typo in CompetitionOpenSinceYear
 ```{r}
@@ -57,25 +55,25 @@ store$Promo2SinceYear<-NULL
 ```
 Merging two datasets by the common variable
 ```{r}
-total<-merge(store, train, by="Store")
+
 total<-total[,c("Store", "DayOfWeek", "Date", "Sales","Customers", "Open", "Promo", "StateHoliday", "SchoolHoliday", "StoreType", "Assortment", "CompetitionDistance", "Promo2", "PromoInterval","Promo2SinceDate", "CompetitionSinceDate")]
 ```
 #Replacing missing competition variables
 ```{r}
-CompetitionDateMissing<-total[is.na(total$CompetitionSinceDate),]
+CompetitionDateMissing<-train_set[is.na(train_set$CompetitionSinceDate),]
 CompetitionDateMissing<-CompetitionDateMissing[!is.na(CompetitionDateMissing$CompetitionDistance),]
 CompetitionDateMissing$CompetitionSinceDate<-CompetitionDateMissing$Date
-total[is.na(total$CompetitionSinceDate) & !is.na(total$CompetitionDistance),"CompetitionSinceDate"]<-CompetitionDateMissing$CompetitionSinceDate
-total$CompetitionSinceDate<-as.Date(total$CompetitionSinceDate)
-total$Date<-as.Date(total$Date)
+train_set[is.na(train_set$CompetitionSinceDate) & !is.na(train_set$CompetitionDistance),"CompetitionSinceDate"]<-CompetitionDateMissing$CompetitionSinceDate
+train_set$CompetitionSinceDate<-as.Date(train_set$CompetitionSinceDate)
+
 ```
 Create dummy variable for whether competition is present on a given day
 ```{r}
-#indx<-as.Date(total$Date)<total$CompetitionSinceDate
-total$CompetitionPresent<-ifelse(total$Date<total$CompetitionSinceDate,0,1)
-total$CompetitionPresent<-as.factor(total$CompetitionPresent)
-#total$CompetitionPresent[indx & !is.na(indx)]<- 0
-#total$CompetitionPresent[indx & is.na(indx)]<- 1
+#indx<-as.Date(train_set$Date)<train_set$CompetitionSinceDate
+train_set$CompetitionPresent<-ifelse(train_set$Date<train_set$CompetitionSinceDate,0,1)
+train_set$CompetitionPresent<-as.factor(train_set$CompetitionPresent)
+#train_set$CompetitionPresent[indx & !is.na(indx)]<- 0
+#train_set$CompetitionPresent[indx & is.na(indx)]<- 1
 ```
 Create a dummy variable for whether there's a Promo 2 on a given day
 ```{r}

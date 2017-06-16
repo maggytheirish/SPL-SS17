@@ -17,8 +17,8 @@ load_packages  <- function(p){
 }
 
 list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
-                      "caret","randomForest","e1071","pROC", "tidyr", "klaR", 
-                      "car","devtools","yamldebugger")
+                      "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
+                      "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
 
 sapply(list.of.packages,load_packages)
 ```

@@ -18,7 +18,7 @@ load_packages  <- function(p){
 
 list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
                       "caret","randomForest","e1071","pROC", "tidyr", "klaR", 
-                      "car")
+                      "car","devtools","yamldebugger")
 
 sapply(list.of.packages,load_packages)
 ```
@@ -31,7 +31,7 @@ store<-read.csv("store.csv", header=T, sep=",")
 Turning numeric variables into factor variables
 ```{r}
 varlist_store<-c("Store", "StoreType", "Assortment", "Promo2")
-store[,varlist]<-lapply(store[,varlist_store], factor)
+store[,varlist_store]<-lapply(store[,varlist_store], factor)
 ```
 Replacing a typo in CompetitionOpenSinceYear
 ```{r}

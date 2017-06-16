@@ -128,6 +128,17 @@ test_set$CompetitionPresent <- factor(test_set$CompetitionPresent, levels=c(leve
 form_na <- is.na(test_set$CompetitionPresent)
 test_set[form_na,"CompetitionPresent"]<- "missing"
 ```
+Replace NAs in CompetitionDistance, Promo2SinceDate, CompetitionSinceDate
+```{r}
+#Train set
+train_set$CompetitionDistance[is.na(train_set$CompetitionDistance)] <- mean(train_set$CompetitionDistance, na.rm = TRUE)
+train_set$Promo2SinceDate[is.na(train_set$Promo2SinceDate)] <- mean(train_set$Promo2SinceDate, na.rm = TRUE)
+train_set$CompetitionSinceDate[is.na(train_set$CompetitionSinceDate)] <- mean(train_set$CompetitionSinceDate, na.rm = TRUE)
+#Test set
+test_set$CompetitionDistance[is.na(test_set$CompetitionDistance)] <- mean(test_set$CompetitionDistance, na.rm = TRUE)
+test_set$Promo2SinceDate[is.na(test_set$Promo2SinceDate)] <- mean(test_set$Promo2SinceDate, na.rm = TRUE)
+test_set$CompetitionSinceDate[is.na(test_set$CompetitionSinceDate)] <- mean(test_set$CompetitionSinceDate, na.rm = TRUE)     
+```
 
 Change date into a date format and separate in 3 columns
 ```{r}

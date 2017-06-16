@@ -33,7 +33,7 @@ train<-read.csv("train.csv", header=T, sep=",")
 ## Creating separate test set 
 train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
 testdate <- train$Date>="2015-07-20" #Selecting the last 10 days for forecasting
-test <- train[testdate==T,]
+newdata <- train[testdate==T,]
 train <- train[testdate==F,] # remove test observations
 
 ## Creating train dataset
@@ -84,10 +84,10 @@ Data Cleaning train & test
 
 ## Change the data type 
 str(new_train)
-str(test)
+str(newdata)
 varlist<-c("DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday") # "Store" , keep store as integer for now 
 new_train[,varlist]<-lapply(new_train[,varlist], factor)
-test[,varlist]<-lapply(test[,varlist], factor)
+newdata[,varlist]<-lapply(newdata[,varlist], factor)
 ```
 
 ```{r}
@@ -98,7 +98,7 @@ summary(new_train)
 Merging the datasets 
 ```{r}
 train_set<-merge(store, new_train, by="Store")
-test_set<-merge(store, test, by="Store")
+newdata_set<-merge(store, newdata, by="Store")
 
 summary(train_set)
 ```
@@ -117,16 +117,16 @@ Create dummy variable for whether competition is present on a given day
 #indx<-as.Date(train_set$Date)<train_set$CompetitionSinceDate
 train_set$CompetitionPresent<-ifelse(train_set$Date<train_set$CompetitionSinceDate,0,1)
 train_set$CompetitionPresent<-as.factor(train_set$CompetitionPresent)
-test_set$CompetitionPresent<-ifelse(test_set$Date<test_set$CompetitionSinceDate,0,1)
-test_set$CompetitionPresent<-as.factor(test_set$CompetitionPresent)
+newdata_set$CompetitionPresent<-ifelse(newdata_set$Date<newdata_set$CompetitionSinceDate,0,1)
+newdata_set$CompetitionPresent<-as.factor(newdata_set$CompetitionPresent)
 # Train set
 train_set$CompetitionPresent <- factor(train_set$CompetitionPresent, levels=c(levels(train_set$CompetitionPresent), "missing"))
 form_na <- is.na(train_set$CompetitionPresent)
 train_set[form_na,"CompetitionPresent"]<- "missing"
-#Test set
-test_set$CompetitionPresent <- factor(test_set$CompetitionPresent, levels=c(levels(test_set$CompetitionPresent), "missing"))
-form_na <- is.na(test_set$CompetitionPresent)
-test_set[form_na,"CompetitionPresent"]<- "missing"
+#newdata set
+newdata_set$CompetitionPresent <- factor(newdata_set$CompetitionPresent, levels=c(levels(newdata_set$CompetitionPresent), "missing"))
+form_na <- is.na(newdata_set$CompetitionPresent)
+newdata_set[form_na,"CompetitionPresent"]<- "missing"
 ```
 Replace NAs in CompetitionDistance, Promo2SinceDate, CompetitionSinceDate
 ```{r}
@@ -134,10 +134,10 @@ Replace NAs in CompetitionDistance, Promo2SinceDate, CompetitionSinceDate
 train_set$CompetitionDistance[is.na(train_set$CompetitionDistance)] <- mean(train_set$CompetitionDistance, na.rm = TRUE)
 train_set$Promo2SinceDate[is.na(train_set$Promo2SinceDate)] <- mean(train_set$Promo2SinceDate, na.rm = TRUE)
 train_set$CompetitionSinceDate[is.na(train_set$CompetitionSinceDate)] <- mean(train_set$CompetitionSinceDate, na.rm = TRUE)
-#Test set
-test_set$CompetitionDistance[is.na(test_set$CompetitionDistance)] <- mean(test_set$CompetitionDistance, na.rm = TRUE)
-test_set$Promo2SinceDate[is.na(test_set$Promo2SinceDate)] <- mean(test_set$Promo2SinceDate, na.rm = TRUE)
-test_set$CompetitionSinceDate[is.na(test_set$CompetitionSinceDate)] <- mean(test_set$CompetitionSinceDate, na.rm = TRUE)     
+#newdata set
+newdata_set$CompetitionDistance[is.na(newdata_set$CompetitionDistance)] <- mean(newdata_set$CompetitionDistance, na.rm = TRUE)
+newdata_set$Promo2SinceDate[is.na(newdata_set$Promo2SinceDate)] <- mean(newdata_set$Promo2SinceDate, na.rm = TRUE)
+newdata_set$CompetitionSinceDate[is.na(newdata_set$CompetitionSinceDate)] <- mean(newdata_set$CompetitionSinceDate, na.rm = TRUE)     
 ```
 
 Change date into a date format and separate in 3 columns
@@ -149,27 +149,36 @@ train_set <- separate(train_set, Date, into = c("Year", "Month",
 date_num<-c("Year", "Month", "Day")
 train_set[,date_num]<-lapply(train_set[,date_num],as.integer)
 
-## Test set
+## newdata set
 
-test_set$Date<-as.Date(paste(test_set$Date,sep="-"),format= "%Y-%m-%d")
-test_set <- separate(test_set, Date, into = c("Year", "Month", 
+newdata_set$Date<-as.Date(paste(newdata_set$Date,sep="-"),format= "%Y-%m-%d")
+newdata_set <- separate(newdata_set, Date, into = c("Year", "Month", 
                                                 "Day"), sep="-")
-test_set[,date_num]<-lapply(test_set[,date_num],as.integer)
+newdata_set[,date_num]<-lapply(newdata_set[,date_num],as.integer)
 
 ```
 ```{r}
 summary(train_set)
-summary(test_set)
+summary(newdata_set)
 ```
 ```{r}
-test_set$Customers<-NULL
+newdata_set$Customers<-NULL
 train_set$Customers<-NULL
-test_set$Sales<-NULL
+newdata_set$Sales<-NULL
 ```
 
+Saving datasets
+
 ```{r}
-test_set$Store<-as.integer(test_set$Store)
-train_set$Store<-as.integer(train_set$Store)
+idx.test <- createDataPartition(train_set$Sales,p=0.8,list=F)
+train_final <- train_set[idx.test,]
+test_final <- train_set[-idx.test,]
+
+```
+```{r}
+saveRDS(train_final,"train.b1.v1")
+saveRDS(test_final,"test.b1.v1")
+saveRDS(newdata_set,"class.b1.v1")
 ```
 
 

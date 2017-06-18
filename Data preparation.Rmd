@@ -45,7 +45,7 @@ new_train$Date<-as.Date(new_train$Date)
 
 ## Check the datasets
 summary(new_train)
-summary(test)
+summary(newdata)
 ```
 
 Store dataset
@@ -128,6 +128,11 @@ newdata_set$CompetitionPresent <- factor(newdata_set$CompetitionPresent, levels=
 form_na <- is.na(newdata_set$CompetitionPresent)
 newdata_set[form_na,"CompetitionPresent"]<- "missing"
 ```
+Create dummy variable for whether Promo2 is present on a given day
+```{r}
+trst[, salespercust := mean(sales)/mean(customers),by=store]
+```
+
 Replace NAs in CompetitionDistance, Promo2SinceDate, CompetitionSinceDate
 ```{r}
 #Train set

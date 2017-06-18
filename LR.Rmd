@@ -5,8 +5,13 @@ date: "16/06/2017"
 output: html_document
 ---
 ```{r}
-lr<- lm(Sales~ .,data = train_set)
+lr<- lm(Sales~ .,data = train_final)
 summary(lr)
+pred<-predict.lm(lr, newdata = test_final)
+```
+
+```{r}
+pred
 ```
 
 ```{r}

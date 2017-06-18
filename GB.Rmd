@@ -68,17 +68,12 @@ eta = c(0.01), gamma = 0, colsample_bytree = c(1)
 
 4.1 Make prediction on test set
 ```{r}
-res.xgb <- results(xgb)
-```
-
-Estimate performance (AUC) on unseen data based on test set
-```{r}
-res.xgb$auc
+res.xgb <- predict(xgb,newdata=test)
 ```
 
 Calculate profit/observation
 ```{r}
-res.xgb$score
+sqrt(mean((test$Sales-res.xgb)^2))
 ```
 
 Saving model 

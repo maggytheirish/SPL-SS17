@@ -1,0 +1,116 @@
+---
+title: "Deision trees"
+author: "Camille"
+date: "17/06/2017"
+output: html_document
+---
+
+Loading the required packages
+```{r}
+load_packages  <- function(p){
+  
+  for(i in seq_along(p)) {
+    if(!require(p[i], character.only=TRUE)) {
+      install.packages(p[i])}
+      library(p[i], character.only=TRUE)
+  }
+
+}
+
+list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
+                      "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
+                      "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
+
+sapply(list.of.packages,load_packages)
+```
+
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading train and test sets
+```{r}
+train <- readRDS("train.b1.v1")
+test <- readRDS("test.b1.v1")
+```
+
+
+#### Full decision tree ####
+
+```{r}
+dt.full <- rpart(Sales ~ ., data = train) ## Using default parameter values
+pred.dt <- predict(dt.full,newdata=test)
+
+printcp(dt) ## Find the cp value with the least relative error
+```
+
+
+### Training the tree using caret to find the optimal value of cp
+
+```{r}
+dt.ctrl <- trainControl(method = "cv",number=2,repeats = 0,
+                        savePredictions =T) # problem with missing values
+
+dt.caret <- train(Sales~.,data=train,method="rpart",
+                  trControl=dt.ctrl)
+
+summary(dt.caret)
+dt.caret$pred
+pred.dt <- predict(dt.caret,newdata=test)
+```
+
+
+# Optimal value of cp=??? need to determine the cp value
+
+### Manual training
+
+Caret only allows us to modify the cp value, manual training was done to find the optimal minsplit
+
+```{r}
+dt.param <- expand.grid(minsplit=c(1:50),cp=seq(0.00001,6.0749e-04,0.00001))
+k <- 5
+results.dt <- matrix(data=NA, nrow =k ,ncol=nrow(dt.param))
+folds <- cut(1:nrow(train),breaks = k,labels = F)
+
+for(j in 1:nrow(dt.param)){
+  for(i in 1:k){
+    
+    cv.idx <- which(folds==i)
+    cv.val <- train[cv.idx,]
+    cv.train <- train[-cv.idx,] 
+    dt.train <- rpart(Sales ~ ., data = cv.train,
+                      minsplit=dt.param[j,1],cp=dt.param[j,2])  
+    
+    pred.dt  <- predict(dt.caret,newdata=cv.val)
+    
+  }}
+
+
+```
+
+## Final model - Optimal parameters 
+
+```{r}
+dt <- rpart(Sales ~ ., data = train,cp=0.00046 ,xval=10)
+
+pred.dt <- predict(dt,newdata=test)
+pred.dt$confusion_matrix
+pred.dt$finalscore
+
+printcp(dt)
+summary(dt)
+rpart.plot(dt)
+```
+
+
+## Trying dt with loss function
+
+```{r}
+dt.loss <- rpart(Sales ~ .,data=train,parms=list(split="information", loss=matrix(c(0,10,3,0), byrow=TRUE, nrow=2)),minsplit=47,cp=0.00046)
+
+pred.dt.loss <- predict(dt.loss,newdata=test)
+pred.dt.loss$finalscore
+
+```
+

@@ -1,0 +1,206 @@
+---
+title: "Gradient Boosting"
+author: "Camille"
+date: "17/06/2017"
+output: html_document
+---
+## Gradient Boosting ##
+
+    ```{r}
+set.seed(123)
+```
+
+#Loading the datasets
+
+```{r}
+train <- readRDS("train.b1.v1")
+test <- readRDS("test.b1.v1")
+```
+
+## Tuning parameters
+
+1. Setup the options for model selection/initialize caret framework
+```{r}
+model.control<- trainControl(
+    method = "cv", # cross validation
+    number = 5, # number of folds in cross validation
+    allowParallel = TRUE, # Enable parallelization if available
+    #returnData = TRUE We will use this to plot partial dependence
+)
+```
+
+2. Define a search grid of values to test for a sequence of randomly sampled variables as candidates at each split
+```{r}
+xgb.parms <- expand.grid(nrounds = c(400), 
+                         max_depth = c(6,8,10), 
+                         eta = c(0.01,0.05), 
+                         gamma = 0,
+                         colsample_bytree = 1,
+                         min_child_weight = 1, 
+                         subsample = c(0.5,0.6,0.8))
+```
+
+Optimal parameters
+```{r}
+xgb.parms.opt <- expand.grid(nrounds = 400, 
+                             max_depth = 6, 
+                             eta = 0.01, 
+                             gamma = 0,
+                             colsample_bytree = 1,
+                             min_child_weight = 1, 
+                             subsample = 0.5)
+```
+
+
+## Model 1 ##
+
+3.1 Train gradient boosting model (prob)
+```{r}
+xgb <- train(Sales~., data = train,  
+             method = "xgbTree",
+             tuneGrid = xgb.parms,
+             metric = "RMSE", trControl = model.control)
+xgb
+```
+Model 1 - Optimal parameters:
+    nrounds=400, max_depth=8, min_child_weight=1, subsample=0.5
+eta = c(0.01), gamma = 0, colsample_bytree = c(1)
+
+4.1 Make prediction on test set
+```{r}
+res.xgb <- predict(xgb,newdata=test)
+```
+
+Calculate profit/observation
+```{r}
+sqrt(mean((test$Sales-res.xgb)^2))
+```
+
+Saving model 
+```{r}
+xgb.pred.df <- as.data.frame(res.xgb$probabilities)
+saveRDS(xgb.pred.df, "xgbpred.RDS")
+```
+
+Create csv with customer ID column and prediction (on class dataset)
+```{r}
+class_dataset <- read.csv("assignment_BADS_WS1617_class.csv",header=T,sep=",")
+prediction_group9 <- cbind(class_dataset$ID, yhat.class1)
+colnames(prediction_group9) <- c("ID", "return_customer")
+write.table(prediction_group9, file="9.csv", sep=",", row.names=F)
+```
+
+Plot ROC
+```{r}
+ROC_curve <- plot.roc(roc((as.numeric(test$return_customer)-1), res.xgb$probabilities))
+```
+
+Variable importance
+```{r}
+xgb.varImp <- varImp(xgb, scale=TRUE)
+xgb.varImp
+```
+
+Plot var.imp
+```{r}
+imp.var.plot <- plot(xgb.varImp)
+imp.var.plot
+```
+
+## Model 2 - gradient boosting model with important variables from xgb
+
+Train model with important variables from xgb (wrapper approach)
+```{r}
+imp.var.xgb <- c("weight","newsletter","remitted_items","form_of_address","woe.advertising_code","order_day",
+                 "item_count","deliveryestimated_day","delivery","deliveryestimated_month","deliveryactual_day",
+                 "order_month","deliverydate_diff","cost_shipping","goods_value","paperback_count","account_length",
+                 "deliveryactual_month","coupon","book_count","return_customer")
+
+frml_xgbvars <- as.formula(paste("return_customer ~" ,paste(imp.var.xgb,collapse ="+"),sep=""))
+
+
+xgb2 <- train(frml_xgbvars~., data = train,  
+              method = "xgbTree",
+              tuneGrid = xgb.parms.opt,
+              metric = "ROC", trControl = model.control)
+xgb2
+```
+
+Make prediction on test set
+```{r}
+res.xgb2 <- results(xgb2)
+```
+
+Estimate performance (AUC) on unseen data based on test set
+```{r}
+auc((as.numeric(test$return_customer)-1), res.xgb2$probabilities)
+```
+
+Calculate profit/observation
+```{r}
+res.xgb2$finalscore
+```
+worse profit results and predictive accuracy and auc when using only 20 most important variables
+
+
+## Model 4 - gradient boosting model with important variables from rfe
+
+Train model with important variables from rfe (wrapper approach)
+```{r}
+imp.var.rfe <- c("remitted_items","newsletter","form_of_address","weight","paperback_count","delivery","payment",
+                 "deliveryactual_day","order_day", "coupon","account_length","deliveryestimated_day","goods_value",
+                 "item_count","book_count","model","cost_shipping","referrer","audiobook_download_count",
+                 "schoolbook_count","return_customer")
+
+
+
+xgb3 <- train(frml_rfe~., data = train,  
+              method = "xgbTree",
+              tuneGrid = xgb.parms.opt,
+              metric = "RMSE", trControl = model.control)
+xgb3
+```
+
+Make prediction on test set
+```{r}
+res.xgb3 <- results(xgb3)
+```
+
+Estimate performance (AUC) on unseen data based on test set
+```{r}
+auc((as.numeric(test$return_customer)-1), res.xgb3$probabilities)
+```
+
+Calculate profit/observation
+```{r}
+res.xgb3$finalscore
+```
+Predictions are also worse
+
+## Partial Dependence Plots ##
+
+Xgboost
+```{r}
+library(pdp)
+
+# Set up empty result list
+xgb.partialPlots <- list()
+
+imp.var.xgb.pdp <- imp.var.xgb[-21]
+
+for (var in imp.var.xgb.pdp) {
+    message("Now calculating for variable ", var)
+    
+    xgb.partialPlots[[var]] <- do.call(partial, list(xgb, pred.var = var, which.class = 2, type = "classification", 
+                                                     plot = FALSE, main=paste("PDP for xgb on", var)))
+}
+
+```
+
+PDPs
+```{r}
+par(mfrow=c(4, 2))
+for(var in names(xgb.partialPlots)){
+    plot(x = xgb.partialPlots[[var]][,1], y = exp(xgb.partialPlots[[var]][,2]), type = "l", xlab = var, ylab = 'Pred. prob. return customer', ylim = c(0.4, 1) )
+}
+```

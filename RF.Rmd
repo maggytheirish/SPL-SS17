@@ -1,0 +1,130 @@
+---
+title: "Random Forest"
+author: "Camille"
+date: "17/06/2017"
+output: html_document
+---
+Loading the required packages
+```{r}
+load_packages  <- function(p){
+  
+  for(i in seq_along(p)) {
+    if(!require(p[i], character.only=TRUE)) {
+      install.packages(p[i])}
+      library(p[i], character.only=TRUE)
+  }
+
+}
+
+list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
+                      "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
+                      "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
+
+sapply(list.of.packages,load_packages)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##### MODEL TRAINING USING CARET ####
+
+### Loading the dataset ####
+
+
+```{r}
+train <- readRDS("train.b1.v1")
+test <- readRDS("test.b1.v1")
+```
+
+
+Setting model control parameters 
+
+```{r}
+k <- 5
+set.seed(123)
+
+model.control <- trainControl(
+    method = "cv", 
+    number = k, 
+    repeats=0, 
+    allowParallel = TRUE
+)
+
+rf.parms <- expand.grid(mtry = 1:10)
+```
+
+Model training using caret
+```{r}
+rf.caret <- train(Sales~., data = train,  
+                  method = "rf", ntree =500, tuneGrid = rf.parms, 
+                  metric = "RMSE", trControl = model.control, verboseIter=T, do.trace=100)
+```
+
+
+Performance metrics and results 
+
+```{r}
+rf.caret$results
+rf.caret$finalModel
+
+plot(rf.caret)
+```
+
+Predict the outcomes of the test set with the custom results function
+
+```{r}
+res.rf.caret <- predict(rf.caret, newdata=test)
+```
+
+Selecting important variables
+
+```{r}
+imp <- varImp(rf.caret)$importance
+save(imp,file = "impvarcaret.RDS")
+
+imp$variable <- rownames(imp)
+bestvars <- as.vector(row.names(imp[imp$Overall>=mean(imp$Overall),]))
+
+bestvars <- gsub("email_domaingmx.de","email_domain",bestvars)
+bestvars <- gsub("form_of_addressMr","form_of_address",bestvars)
+bestvars <- gsub("newsletter1","newsletter",bestvars)
+bestvars <- bestvars[-c(5,6)]
+
+frml_rfvars <- as.formula(paste("Sales ~" ,paste(bestvars,collapse ="+"),sep=""))
+```
+
+### FINAL RANDOM FOREST ####
+
+## Run random forest again using the best parameter options as obtained from the model training
+
+Optimal parameters ntree == ??? , mtry== ??? 
+
+```{r}
+rf_full <- randomForest(Sales~.,data=train,ntree=500,mtry=8,importance=T, do.trace=100)
+
+res.rf_full <- predict(rf_full,newdata=test)
+
+res.rf_full$finalscore
+res.rf_full$auc
+
+```
+
+
+With variables selected from Varimp function
+
+```{r}
+rf_selected<- randomForest(frml_rfvars,data=train,ntree=??,mtry=??,importance=T, do.trace=100)
+
+res.rf_selected <- predict(rf_selected,newdata=test)
+
+res.rf_selected$finalscore
+res.rf_selected$auc
+```
+
+Saving results
+
+```{r}
+save(rf.caret,file = "rfcaretres.RDS")
+```
+

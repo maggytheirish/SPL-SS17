@@ -1,0 +1,92 @@
+---
+title: "Neural Networks"
+author: "Camille"
+date: "17/06/2017"
+output: html_document
+---
+Loading the required packages
+```{r}
+load_packages  <- function(p){
+  
+  for(i in seq_along(p)) {
+    if(!require(p[i], character.only=TRUE)) {
+      install.packages(p[i])}
+      library(p[i], character.only=TRUE)
+  }
+
+}
+
+list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
+                      "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
+                      "car","devtools","nnet","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
+
+sapply(list.of.packages,load_packages)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load the train and test datasets
+```{r}
+train<-readRDS("train.b1.v1")
+test<-readRDS("test.b1.v1")
+```
+Specifying the model parameters
+```{r}
+nn.ctrl<- trainControl(
+  method = "cv", # cross-validation
+  number = 5, # number of folds 
+  allowParallel = TRUE, 
+  returnData = FALSE 
+)
+```
+
+```{r}
+nn.parms <- expand.grid(decay = c(0, 10^seq(-3, 0, 1)), size = seq(1,2,3))
+```
+Training the model on the full set of variables
+```{r}
+nn.train <- train(Sales ~., data = train,  
+                  method = "avNNet", maxit = 400, trace = FALSE, # options for nnet function
+                  tuneGrid = nn.parms, # parameters to be tested
+                  metric = "RMSE", trControl = nn.ctrl, MaxNWts=5000)
+```
+Plotting the neural network
+```{r}
+plot(nn.train)
+```
+Model evaluation using the results function
+```{r}
+nn.res <- results(nn.train)
+nn.res$finalscore
+nn.res$auc
+
+nn.varimp<-varImp(nn.train, scale=TRUE)
+nn.varimp
+```
+Performance measure of the model
+```{r}
+nn.res$confusion_matrix
+nn.res$finalscore
+```
+Using averaging to stabilize the output
+```{r}
+#nn.parms <- expand.grid(decay = c(0, 10^seq(-3, 0, 1)), size = seq(1,2,3), bag=FALSE)
+#nn.avg <- train(Sales~., data = train,  
+#            method = "avNNet", maxit = 400, trace = FALSE, # options for nnet function
+#            tuneGrid = nn.parms, # parameters to be tested
+#            metric = "RMSE", trControl = model.control, MaxNWts=5000)
+```
+Performance measure of the model
+```{r}
+#res.nn.avg<- results(nn.avg)
+#varimp<-varImp(nn, scale=FALSE)
+#varimp
+```
+Displaying confusion matrix
+```{r}
+# res.nn.avg$confusion_matrix
+# res.nn.avg$finalscore
+```
+

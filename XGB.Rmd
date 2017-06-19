@@ -1,0 +1,77 @@
+---
+title: "XGB"
+author: "Margarita"
+date: "18/06/2017"
+output: html_document
+---
+```{r}
+train_final<-readRDS("train.b1.v1")
+test_final<-readRDS("test.b1.v1")
+newdata_set<-readRDS("class.b1.v1")
+```
+
+## Gradient Boosting ##
+```{r}
+set.seed(123)
+```
+1. Setup the options for model selection/initialize caret framework
+```{r}
+model.control<- trainControl(
+  method = "cv", # cross validation
+  number = 5, # number of folds in cross validation
+  allowParallel = TRUE, # Enable parallelization if available
+  # We will use this to plot partial dependence
+)
+```
+2. Define a search grid of values to test for a sequence of randomly sampled variables as candidates at each split
+```{r}
+xgb.parms <- expand.grid(nrounds = c(400), 
+                         max_depth = c(6,8,10), 
+                         eta = c(0.01,0.05), 
+                         gamma = 0,
+                         colsample_bytree = 1,
+                         min_child_weight = 1, 
+                         subsample = c(0.5,0.6,0.8))
+```
+
+Optimal parameters
+```{r}
+xgb.parms.opt <- expand.grid(nrounds = 400, 
+                         max_depth = 10, 
+                         eta = 0.05, 
+                         gamma = 0,
+                         colsample_bytree = 1,
+                         min_child_weight = 1, 
+                         subsample = 0.6)
+```
+
+
+## Model 1 ##
+
+3.1 Train gradient boosting model (prob)
+```{r}
+xgb <- train(Sales~., data = train_final,  
+             method = "xgbTree",
+             tuneGrid = xgb.parms.opt,
+             metric = "RMSE", trControl = model.control)
+xgb
+```
+4.1 Make prediction on test set
+```{r}
+res.xgb <- predict(xgb, newdata = test_final)
+```
+
+```{r}
+RMSE<-sqrt(mean((test_final$Sales-mean(train_final$Sales))^2))
+```
+
+```{r}
+res<-RMSE/nrow(test_final)
+res
+```
+
+Variable importance
+```{r}
+xgb.varImp <- varImp(xgb, scale=TRUE)
+xgb.varImp
+```

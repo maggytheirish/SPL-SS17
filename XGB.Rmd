@@ -58,11 +58,11 @@ xgb
 ```
 4.1 Make prediction on test set
 ```{r}
-res.xgb <- predict(xgb, newdata = test_final)
+test_final$res.xgb <- predict(xgb, newdata = test_final)
 ```
 
 ```{r}
-RMSE<-sqrt(mean((test_final$Sales-mean(train_final$Sales))^2))
+RMSE<-sqrt(mean((test_final$Sales-test_final$res.xgb)^2))
 ```
 
 ```{r}
@@ -75,3 +75,9 @@ Variable importance
 xgb.varImp <- varImp(xgb, scale=TRUE)
 xgb.varImp
 ```
+Chi-square test to confirm variable importance - to be continued
+```{r}
+test <- chisq.test(train_final$Open)
+print(test)
+```
+

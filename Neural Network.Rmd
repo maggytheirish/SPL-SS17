@@ -1,0 +1,45 @@
+---
+title: "Neural Network"
+date: "23/06/2017"
+output: html_document
+---
+```{r}
+set.seed(123)
+library(neuralnet)
+```
+Specifying the model parameters
+```{r}
+nn.ctrl<- trainControl(
+  method = "cv", # cross-validation
+  number = 5, # number of folds 
+  allowParallel = TRUE, 
+  returnData = FALSE 
+)
+```
+
+```{r}
+nn.parms <- expand.grid(decay = c(0, 10^seq(-3, 0, 1)), size = seq(1,2,3), bag=FALSE)
+```
+Training the model on the full set of variables
+```{r}
+nn.train <- train(Sales~., data = train_final,  
+            method = "avNNet", maxit = 400,preProc = c("center", "scale"), trace = FALSE, # options for nnet function
+            tuneGrid = nn.parms, # parameters to be tested
+            metric = "RMSE", trControl = nn.ctrl, linout=1,MaxNWts=5000)
+```
+Plotting the neural network
+```{r}
+plot(nn.train)
+```
+Predicting on the test set
+```{r}
+pr.nn<-predict(nn.train, newdata=test_final)
+```
+RMSE calculation
+```{r}
+RMSE<-sqrt(mean((test_final$Sales-pr.nn)^2))
+RMSE
+res.nnet<-RMSE/nrow(test_final)
+res.nnet
+```
+```

@@ -1,0 +1,16 @@
+
+Name of Quantlet: SPL_Data_Exploration
+ 
+Published in:     Statistical programming languages - Student Project on ''Predicting Sales Using Machine Learning''
+  
+Description:      Helps to explore the provided dataset using summary statistics and plots
+ 
+Keywords:         sales, plot, summary, data, statistics
+
+Author:           Margarita Kostina
+
+Submitted:        Wednesday, July 12 2017 by Margarita Kostina
+  
+Datafile:         apple.csv, bac.csv, ed.csv, ford.csv, ibm.csv, ms.csv
+  
+  

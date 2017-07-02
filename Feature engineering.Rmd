@@ -1,0 +1,120 @@
+---
+title: "Feature engineering"
+author: "Margarita"
+date: "01/07/2017"
+output: html_document
+---
+#This script creates new features and splits the dataset for training and testing
+```{r}
+##Load the clean dataset
+```
+
+
+```{r}
+##Creating a starting date for Promo2
+train$Promo2SinceDate=as.Date(with(train, paste(Promo2SinceYear,Promo2SinceWeek,1, sep="-")),"%Y-%U-%u")
+train$Promo2SinceWeek=NULL #deleting redundant columns
+train$Promo2SinceYear=NULL
+```
+
+```{r}
+#Creating a starting date for Competition (assuming it's from the first day of the month)
+train$CompetitionSinceDate=as.Date(paste(train$CompetitionOpenSinceYear,train$CompetitionOpenSinceMonth,1, sep="-"),format="%Y-%m-%d")
+train$CompetitionOpenSinceYear=NULL #deleting redundant columns
+train$CompetitionOpenSinceMonth=NULL
+```
+
+```{r}
+#Replacing NAs in CompetitionSinceDate
+CompetitionDateMissing=train[is.na(train$CompetitionSinceDate),]
+CompetitionDateMissing=CompetitionDateMissing[!is.na(CompetitionDateMissing$CompetitionDistance),]
+CompetitionDateMissing$CompetitionSinceDate=CompetitionDateMissing$Date #replacing NAs with the current date
+train[is.na(train$CompetitionSinceDate) & !is.na(train$CompetitionDistance),"CompetitionSinceDate"]=CompetitionDateMissing$CompetitionSinceDate
+train$CompetitionSinceDate=as.Date(train$CompetitionSinceDate)
+summary(train) 
+```
+Create a new binary variable StoreAssortmentMatch
+```{r}
+train$Assortment=as.character(train$Assortment) #this is necessary since StoreType and Assortment have different levels
+train$StoreAssortmentMatch=ifelse(train$StoreType==train$Assortment,1,0)
+train$Assortment=as.factor(train$Assortment)
+train$StoreAssortmentMatch=as.factor(train$StoreAssortmentMatch)
+```
+
+Create dummy variable for whether competition is present on a given day
+```{r}
+train$Date=as.Date(train$Date)
+train$CompetitionPresent=ifelse(train$Date<train$CompetitionSinceDate,0,1)
+train$CompetitionPresent=as.factor(train$CompetitionPresent)
+train$CompetitionPresent = factor(train$CompetitionPresent, levels=c(levels(train$CompetitionPresent), "missing"))
+form_na = is.na(train$CompetitionPresent)
+train[form_na,"CompetitionPresent"]= "missing"
+```
+
+Create a new binary variable indicating if both types of holidays take place on a given day
+```{r}
+#new_train set
+train$StateHoliday=as.character(train$StateHoliday)
+train$BothHolidays=ifelse(train$StateHoliday==train$SchoolHoliday,1,0)
+train$StateHoliday=as.factor(train$StateHoliday)
+train$BothHolidays=as.factor(train$BothHolidays)
+
+```
+#Replace NAs in newly created CompetitionDistance, CompetitionSinceDate, Promo2SinceDate
+```{r}
+train$CompetitionDistance[is.na(train$CompetitionDistance)] = mean(train$CompetitionDistance, na.rm = TRUE)
+train$CompetitionSinceDate[is.na(train$CompetitionSinceDate)] = mean(train$CompetitionSinceDate, na.rm = TRUE)
+train$Promo2SinceDate[is.na(train$Promo2SinceDate)] = mean(train$Promo2SinceDate, na.rm = TRUE)
+summary(train)   
+```
+Change date into a date format and separate in 3 columns
+```{r}
+#train$Date=as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
+train = separate(train, Date, into = c("Year", "Month", 
+                                                "Day"), sep="-")
+train=separate(train,Promo2SinceDate,into = c("Promo2SinceYear","Promo2SinceMonth", "Promo2SinceDay"), sep="-")
+train=separate(train,CompetitionSinceDate,into = c("CompetitionSinceYear","CompetitionSinceMonth", "CompetitionSinceDay"), sep="-")
+
+date_num=c("Year", "Month", "Day", "Promo2SinceYear","Promo2SinceMonth","Promo2SinceDay","CompetitionSinceYear", "CompetitionSinceMonth", "CompetitionSinceDay")
+train[,date_num]=lapply(train[,date_num],as.integer)
+
+```
+
+```{r}
+## Creating separate test set where sales need to be predicted
+train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
+testdate = train$Date>="2015-07-20" #Selecting the last 10 days for forecasting
+newdata_set = train[testdate==T,]
+train = train[testdate==F,] # remove test observations
+
+## Creating train dataset
+train$Date= as.factor(train$Date)
+set.seed(123)
+idx = createDataPartition(train$Date,p=0.05,list = F)
+train_set = train[idx,]
+train_set$Date=as.Date(train_set$Date)
+
+## Check the datasets
+summary(train_set)
+summary(newdata_set)
+```
+
+```{r}
+newdata_set$Customers=NULL
+newdata_set$Sales=NULL
+train_set$Customers=NULL
+```
+
+Saving datasets
+
+```{r}
+idx.test = createDataPartition(train_set$Sales,p=0.8,list=F)
+train_final = train_set[idx.test,]
+test_final = train_set[-idx.test,]
+
+```
+```{r}
+saveRDS(train_final,"train.b1.v2")
+saveRDS(test_final,"test.b1.v2")
+saveRDS(newdata_set,"class.b1.v2")
+```

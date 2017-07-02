@@ -5,7 +5,7 @@ Published in:     Statistical programming languages - Student Project on ''Predi
   
 Description:      Helps to explore the provided dataset using summary statistics and plots
  
-Keywords:         sales, plot, summary, data, statistics
+Keywords:         plot, summary, statistics, graphical representation, data visualization
 
 Author:           Margarita Kostina
 

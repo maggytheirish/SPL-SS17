@@ -5,13 +5,28 @@ date: "16/06/2017"
 output: html_document
 ---
 ```{r}
-lr<- lm(Sales~ .,data = train_final)
+lr<- lm(Sales~ .,data = new_train)
 summary(lr)
-pred<-predict.lm(lr, newdata = test_final)
+pred<-predict.lm(lr, newdata = new_train)
 ```
 
 ```{r}
 pred
+```
+
+
+```{r}
+
+res <- stack(data.frame(Observed = new_train$Sales, Predicted = fitted(lr)))
+res <- cbind(res, x = rep(new_train$Date, 2))
+head(res)
+
+require("lattice")
+
+xyplot(values ~ x, data = res, group = ind, auto.key = TRUE)
+
+
+
 ```
 
 ```{r}

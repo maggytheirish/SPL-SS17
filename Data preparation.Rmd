@@ -4,9 +4,12 @@ author: "Margarita"
 date: "16/06/2017"
 output: html_document
 ---
-Loading the required packages
+#Data preparation
+#The following code loads the datasets and reformats the variables
+#Loading the required packages
 ```{r}
-load_packages  <- function(p){
+##Creating a function to load the packages
+load_packages = function(p){
   
   for(i in seq_along(p)) {
     if(!require(p[i], character.only=TRUE)) {
@@ -16,199 +19,47 @@ load_packages  <- function(p){
 
 }
 
-list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
+list.of.packages = c("rpart","lubridate","outliers","rpart.plot", "xgboost",
                       "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
                       "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
 
 sapply(list.of.packages,load_packages)
 ```
 
-Loading the datasets
+#Loading the datasets
 ```{r}
-
-## Read in original dataset
-store<-read.csv("store.csv", header=T, sep=",")
-train<-read.csv("train.csv", header=T, sep=",")
-
-## Creating separate test set 
-train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
-testdate <- train$Date>="2015-07-20" #Selecting the last 10 days for forecasting
-newdata <- train[testdate==T,]
-train <- train[testdate==F,] # remove test observations
-
-## Creating train dataset
-train$Date<- as.factor(train$Date)
-set.seed(123)
-idx <- createDataPartition(train$Date,p=0.05,list = F)
-new_train <- train[idx,]
-new_train$Date<-as.Date(new_train$Date)
-
-## Check the datasets
-summary(new_train)
-summary(newdata)
-```
-
-Store dataset
-Turning numeric variables into factor variables
-```{r}
-varlist_store<-c("StoreType", "Assortment", "Promo2")
-store[,varlist_store]<-lapply(store[,varlist_store], factor)
-```
-Replacing a typo in CompetitionOpenSinceYear
-```{r}
-store$CompetitionOpenSinceYear<-gsub("1900", "2010", store$CompetitionOpenSinceYear)
-```
-Replacing empty category in PromoInterval with "missing"
-```{r}
-store$PromoInterval<-sub("^$", "missing", store$PromoInterval)
-store$PromoInterval<-as.factor(store$PromoInterval)
-```
-Feature engineering
-Starting date for Promo2
-```{r}
-store$Promo2SinceDate<-as.Date(with(store, paste(Promo2SinceYear,Promo2SinceWeek,1, sep="-")),"%Y-%U-%u")
-```
-Starting date for Competition (assuming it's from the first day of the month)
-```{r}
-store$CompetitionSinceDate<-as.Date(paste(store$CompetitionOpenSinceYear,store$CompetitionOpenSinceMonth,1, sep="-"),format="%Y-%m-%d")
-```
-Delete unnecessary columns
-```{r}
-store$CompetitionOpenSinceMonth<-NULL
-store$CompetitionOpenSinceYear<-NULL
-store$Promo2SinceWeek<-NULL
-store$Promo2SinceYear<-NULL
-```
-Create a new binary variable StoreAssortmentMatch
-```{r}
-store$Assortment<-as.character(store$Assortment)#this is necessary since StoreType and Assortment have different levels
-store$StoreAssortmentMatch<-ifelse(store$StoreType==store$Assortment,1,0)
-store$Assortment<-as.factor(store$Assortment)
-store$StoreAssortmentMatch<-as.factor(store$StoreAssortmentMatch)
-```
-
-Data Cleaning train & test
-```{r}
-
-## Change the data type 
-str(new_train)
-str(newdata)
-varlist<-c("DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday") # "Store" , keep store as integer for now 
-new_train[,varlist]<-lapply(new_train[,varlist], factor)
-newdata[,varlist]<-lapply(newdata[,varlist], factor)
+## Read in original datasets
+store=read.csv("store.csv", header=T, sep=",") #the dataset containing supplemental information about the stores
+train=read.csv("train.csv", header=T, sep=",") #historical data including sales
+##Merging the datasets 
+train=merge(store,train, by="Store")
 ```
 
 ```{r}
-sapply(new_train,class)
-summary(new_train)
+#Turning numeric variables into factor variables
+varlist=c("StoreType", "Assortment", "Promo2","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday")
+train[,varlist]=lapply(train[,varlist], factor)
 ```
-
-Merging the datasets 
-```{r}
-train_set<-merge(store, new_train, by="Store")
-newdata_set<-merge(store, newdata, by="Store")
-
-summary(train_set)
-```
-#Replacing missing competition variables
-```{r}
-CompetitionDateMissing<-train_set[is.na(train_set$CompetitionSinceDate),]
-CompetitionDateMissing<-CompetitionDateMissing[!is.na(CompetitionDateMissing$CompetitionDistance),]
-CompetitionDateMissing$CompetitionSinceDate<-CompetitionDateMissing$Date
-train_set[is.na(train_set$CompetitionSinceDate) & !is.na(train_set$CompetitionDistance),"CompetitionSinceDate"]<-CompetitionDateMissing$CompetitionSinceDate
-train_set$CompetitionSinceDate<-as.Date(train_set$CompetitionSinceDate)
-
-```
-
-Create dummy variable for whether competition is present on a given day
-```{r}
-#indx<-as.Date(train_set$Date)<train_set$CompetitionSinceDate
-train_set$CompetitionPresent<-ifelse(train_set$Date<train_set$CompetitionSinceDate,0,1)
-train_set$CompetitionPresent<-as.factor(train_set$CompetitionPresent)
-newdata_set$CompetitionPresent<-ifelse(newdata_set$Date<newdata_set$CompetitionSinceDate,0,1)
-newdata_set$CompetitionPresent<-as.factor(newdata_set$CompetitionPresent)
-# Train set
-train_set$CompetitionPresent <- factor(train_set$CompetitionPresent, levels=c(levels(train_set$CompetitionPresent), "missing"))
-form_na <- is.na(train_set$CompetitionPresent)
-train_set[form_na,"CompetitionPresent"]<- "missing"
-#newdata set
-newdata_set$CompetitionPresent <- factor(newdata_set$CompetitionPresent, levels=c(levels(newdata_set$CompetitionPresent), "missing"))
-form_na <- is.na(newdata_set$CompetitionPresent)
-newdata_set[form_na,"CompetitionPresent"]<- "missing"
-```
-
-Create a new binary variable indicating if both types of holidays take place on a given day
-```{r}
-#new_train set
-train_set$StateHoliday<-as.character(train_set$StateHoliday)
-train_set$BothHolidays<-ifelse(train_set$StateHoliday==train_set$SchoolHoliday,1,0)
-train_set$StateHoliday<-as.factor(train_set$StateHoliday)
-train_set$BothHolidays<-as.factor(train_set$BothHolidays)
-#newdata set
-newdata_set$StateHoliday<-as.character(newdata_set$StateHoliday)
-newdata_set$BothHolidays<-ifelse(newdata_set$StateHoliday==newdata_set$SchoolHoliday,1,0)
-newdata_set$StateHoliday<-as.factor(newdata_set$StateHoliday)
-newdata_set$BothHolidays<-as.factor(newdata_set$BothHolidays)
-```
-
-Replace NAs in CompetitionDistance, Promo2SinceDate, CompetitionSinceDate
-```{r}
-#Train set
-train_set$CompetitionDistance[is.na(train_set$CompetitionDistance)] <- mean(train_set$CompetitionDistance, na.rm = TRUE)
-train_set$Promo2SinceDate[is.na(train_set$Promo2SinceDate)] <- mean(train_set$Promo2SinceDate, na.rm = TRUE)
-train_set$CompetitionSinceDate[is.na(train_set$CompetitionSinceDate)] <- mean(train_set$CompetitionSinceDate, na.rm = TRUE)
-#newdata set
-newdata_set$CompetitionDistance[is.na(newdata_set$CompetitionDistance)] <- mean(newdata_set$CompetitionDistance, na.rm = TRUE)
-newdata_set$Promo2SinceDate[is.na(newdata_set$Promo2SinceDate)] <- mean(newdata_set$Promo2SinceDate, na.rm = TRUE)
-newdata_set$CompetitionSinceDate[is.na(newdata_set$CompetitionSinceDate)] <- mean(newdata_set$CompetitionSinceDate, na.rm = TRUE)     
-```
-
-Change date into a date format and separate in 3 columns
-```{r}
-# train_set
-train_set$Date<-as.Date(paste(train_set$Date,sep="-"),format= "%Y-%m-%d")
-train_set <- separate(train_set, Date, into = c("Year", "Month", 
-                                                "Day"), sep="-")
-train_set<-separate(train_set,Promo2SinceDate,into = c("Promo2SinceYear","Promo2SinceMonth", "Promo2SinceDay"), sep="-")
-train_set<-separate(train_set,CompetitionSinceDate,into = c("CompetitionSinceYear","CompetitionSinceMonth", "CompetitionSinceDay"), sep="-")
-
-date_num<-c("Year", "Month", "Day", "Promo2SinceYear","Promo2SinceMonth","Promo2SinceDay","CompetitionSinceYear", "CompetitionSinceMonth", "CompetitionSinceDay")
-train_set[,date_num]<-lapply(train_set[,date_num],as.integer)
-
-# newdata_set
-
-newdata_set$Date<-as.Date(paste(newdata_set$Date,sep="-"),format= "%Y-%m-%d")
-newdata_set <- separate(newdata_set, Date, into = c("Year", "Month", 
-                                                "Day"), sep="-")
-newdata_set<-separate(newdata_set,Promo2SinceDate,into = c("Promo2SinceYear","Promo2SinceMonth", "Promo2SinceDay"), sep="-")
-newdata_set<-separate(newdata_set,CompetitionSinceDate,into = c("CompetitionSinceYear","CompetitionSinceMonth", "CompetitionSinceDay"), sep="-")
-newdata_set[,date_num]<-lapply(newdata_set[,date_num],as.integer)
-
-```
-
 
 ```{r}
-summary(train_set)
-summary(newdata_set)
+#Checking the dataset
+sapply(train,class)
+summary(train)
 ```
-```{r}
-newdata_set$Customers<-NULL
-train_set$Customers<-NULL
-newdata_set$Sales<-NULL
-```
-
-Saving datasets
 
 ```{r}
-idx.test <- createDataPartition(train_set$Sales,p=0.8,list=F)
-train_final <- train_set[idx.test,]
-test_final <- train_set[-idx.test,]
-
+#Replacing a typo in CompetitionOpenSinceYear variable with a median
+train$CompetitionOpenSinceYear=gsub("1900", "2010", train$CompetitionOpenSinceYear)
+train$CompetitionOpenSinceYear=as.numeric(train$CompetitionOpenSinceYear)
 ```
+
 ```{r}
-saveRDS(train_final,"train.b1.v1")
-saveRDS(test_final,"test.b1.v1")
-saveRDS(newdata_set,"class.b1.v1")
+#Replacing empty category in PromoInterval with "missing"
+train$PromoInterval=sub("^$", "missing", train$PromoInterval)
+train$PromoInterval=as.factor(train$PromoInterval)
 ```
 
-
+```{r}
+#Saving the clean dataset
+saveRDS(train,"train")
+```

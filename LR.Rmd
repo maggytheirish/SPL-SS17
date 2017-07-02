@@ -4,34 +4,49 @@ author: "Margarita"
 date: "16/06/2017"
 output: html_document
 ---
+
 ```{r}
-lr<- lm(Sales~ .,data = new_train)
+train_final.v2<-readRDS("train.b1.v2")
+test_final.v2<-readRDS("test.b1.v2")
+newdata_set.v2<-readRDS("class.b1.v2")
+
+summary(train_final.v2)
+```
+
+```{r}
+lr<- lm(Sales~ .,data = train_final.v2)
 summary(lr)
-pred<-predict.lm(lr, newdata = new_train)
+pred<-predict.lm(lr, newdata = train_final.v2)
 ```
 
 ```{r}
 pred
 ```
+```{r}
+calc.relimp(lr,type=c("lmg","last","first","pratt"),
+   rela=TRUE)
+```
 
 
 ```{r}
 
-res <- stack(data.frame(Observed = new_train$Sales, Predicted = fitted(lr)))
-res <- cbind(res, x = rep(new_train$Date, 2))
+train_final.v2$Date<-as.Date(train_final.v2$Date)
+
+res <- stack(data.frame(Observed = train_final.v2$Sales, Predicted = fitted(lr)))
+res <- cbind(res, x = rep(train_final.v2$Date, 2))
 head(res)
 
 require("lattice")
 
 xyplot(values ~ x, data = res, group = ind, auto.key = TRUE)
-
-
-
 ```
-
 ```{r}
-calc.relimp(lr,type=c("lmg","last","first","pratt"),
-   rela=TRUE)
-
+library(plm)
+fixed <- plm(Sales~ StoreType + Assortment + CompetitionDistance + Promo2 + PromoInterval + DayOfWeek + Open + Promo + StateHoliday + SchoolHoliday + Promo2SinceDate + CompetitionSinceDate + StoreAssortmentMatch + CompetitionPresent + BothHolidays, data=train_final.v2, index=c("Store","Date"), model="within")
+summary(fixed)
+```
+```{r}
+fitted <- as.numeric(fixed$model[[1]] - fixed$residuals) 
+fitted
 ```
 

@@ -58,3 +58,8 @@ train$CompetitionOpenSinceYear=as.numeric(train$CompetitionOpenSinceYear)
 train$PromoInterval=sub("^$", "missing", train$PromoInterval)
 train$PromoInterval=as.factor(train$PromoInterval)
 ```
+
+```{r}
+#Saving the clean dataset
+saveRDS(train,"train")
+```

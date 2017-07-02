@@ -7,8 +7,8 @@ output: html_document
 #This script creates new features and splits the dataset for training and testing
 ```{r}
 ##Load the clean dataset
+train<-readRDS("train")
 ```
-
 
 ```{r}
 ##Creating a starting date for Promo2
@@ -31,18 +31,17 @@ CompetitionDateMissing=CompetitionDateMissing[!is.na(CompetitionDateMissing$Comp
 CompetitionDateMissing$CompetitionSinceDate=CompetitionDateMissing$Date #replacing NAs with the current date
 train[is.na(train$CompetitionSinceDate) & !is.na(train$CompetitionDistance),"CompetitionSinceDate"]=CompetitionDateMissing$CompetitionSinceDate
 train$CompetitionSinceDate=as.Date(train$CompetitionSinceDate)
-summary(train) 
 ```
-Create a new binary variable StoreAssortmentMatch
 ```{r}
+#Create a new binary variable StoreAssortmentMatch
 train$Assortment=as.character(train$Assortment) #this is necessary since StoreType and Assortment have different levels
 train$StoreAssortmentMatch=ifelse(train$StoreType==train$Assortment,1,0)
 train$Assortment=as.factor(train$Assortment)
 train$StoreAssortmentMatch=as.factor(train$StoreAssortmentMatch)
 ```
 
-Create dummy variable for whether competition is present on a given day
 ```{r}
+#Create a dummy variable for whether competition is present on a given day
 train$Date=as.Date(train$Date)
 train$CompetitionPresent=ifelse(train$Date<train$CompetitionSinceDate,0,1)
 train$CompetitionPresent=as.factor(train$CompetitionPresent)
@@ -51,24 +50,24 @@ form_na = is.na(train$CompetitionPresent)
 train[form_na,"CompetitionPresent"]= "missing"
 ```
 
-Create a new binary variable indicating if both types of holidays take place on a given day
 ```{r}
-#new_train set
+#Create a new binary variable indicating if both types of holidays take place on a given day
 train$StateHoliday=as.character(train$StateHoliday)
 train$BothHolidays=ifelse(train$StateHoliday==train$SchoolHoliday,1,0)
 train$StateHoliday=as.factor(train$StateHoliday)
 train$BothHolidays=as.factor(train$BothHolidays)
-
 ```
-#Replace NAs in newly created CompetitionDistance, CompetitionSinceDate, Promo2SinceDate
+
 ```{r}
+#Replace NAs in newly created CompetitionDistance, CompetitionSinceDate, Promo2SinceDate
 train$CompetitionDistance[is.na(train$CompetitionDistance)] = mean(train$CompetitionDistance, na.rm = TRUE)
 train$CompetitionSinceDate[is.na(train$CompetitionSinceDate)] = mean(train$CompetitionSinceDate, na.rm = TRUE)
 train$Promo2SinceDate[is.na(train$Promo2SinceDate)] = mean(train$Promo2SinceDate, na.rm = TRUE)
 summary(train)   
 ```
-Change date into a date format and separate in 3 columns
+
 ```{r}
+#Change date into a date format and separate in 3 columns
 #train$Date=as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
 train = separate(train, Date, into = c("Year", "Month", 
                                                 "Day"), sep="-")
@@ -100,20 +99,21 @@ summary(newdata_set)
 ```
 
 ```{r}
-newdata_set$Customers=NULL
-newdata_set$Sales=NULL
+newdata_set$Sales=NULL #Remove the variable Sales that needs to be predicted from the testing dataset
+#Remove the variable customers related to Sales from both traiing and testing datasets
+newdata_set$Customers=NULL 
 train_set$Customers=NULL
 ```
 
-Saving datasets
-
 ```{r}
+#Create testing and training subsets within the train set
 idx.test = createDataPartition(train_set$Sales,p=0.8,list=F)
 train_final = train_set[idx.test,]
 test_final = train_set[-idx.test,]
 
 ```
 ```{r}
+#Saving datasets
 saveRDS(train_final,"train.b1.v2")
 saveRDS(test_final,"test.b1.v2")
 saveRDS(newdata_set,"class.b1.v2")

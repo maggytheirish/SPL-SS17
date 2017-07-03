@@ -9,7 +9,7 @@ output: html_document
 #Loading the required packages
 ```{r}
 ##Creating a function to load the packages
-load_packages = function(p){
+LoadPackages = function(p){
   
   for(i in seq_along(p)) {
     if(!require(p[i], character.only=TRUE)) {
@@ -23,22 +23,22 @@ list.of.packages = c("rpart","lubridate","outliers","rpart.plot", "xgboost",
                       "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
                       "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
 
-sapply(list.of.packages,load_packages)
+sapply(list.of.packages,LoadPackages)
 ```
 
 #Loading the datasets
 ```{r}
 ## Read in original datasets
-store=read.csv("store.csv", header=T, sep=",") #the dataset containing supplemental information about the stores
-train=read.csv("train.csv", header=T, sep=",") #historical data including sales
+store = read.csv("store.csv", header=T, sep=",") #the dataset containing supplemental information about the stores
+train = read.csv("train.csv", header=T, sep=",") #historical data including sales
 ##Merging the datasets 
-train=merge(store,train, by="Store")
+train = merge(store,train, by="Store")
 ```
 
 ```{r}
 #Turning numeric variables into factor variables
-varlist=c("StoreType", "Assortment", "Promo2","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday")
-train[,varlist]=lapply(train[,varlist], factor)
+varlist = c("StoreType", "Assortment", "Promo2","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday")
+train[,varlist] = lapply(train[,varlist], factor)
 ```
 
 ```{r}
@@ -49,14 +49,14 @@ summary(train)
 
 ```{r}
 #Replacing a typo in CompetitionOpenSinceYear variable with a median
-train$CompetitionOpenSinceYear=gsub("1900", "2010", train$CompetitionOpenSinceYear)
-train$CompetitionOpenSinceYear=as.numeric(train$CompetitionOpenSinceYear)
+train$CompetitionOpenSinceYear = gsub("1900", "2010", train$CompetitionOpenSinceYear)
+train$CompetitionOpenSinceYear = as.numeric(train$CompetitionOpenSinceYear)
 ```
 
 ```{r}
 #Replacing empty category in PromoInterval with "missing"
-train$PromoInterval=sub("^$", "missing", train$PromoInterval)
-train$PromoInterval=as.factor(train$PromoInterval)
+train$PromoInterval = sub("^$", "missing", train$PromoInterval)
+train$PromoInterval = as.factor(train$PromoInterval)
 ```
 
 ```{r}

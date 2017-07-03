@@ -10,6 +10,26 @@ output: html_document
 train = readRDS("train")  # Load the clean dataset
 ```
 
+# Adding features with mean sales 
+```{r}
+train$Store <- as.factor(train$Store)
+train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
+train <- separate(train, Date, into = c("Year", "Month","Day"), sep="-")
+
+avgsalesperstore <- aggregate(train$Sales, list(train$Store), mean)
+avgvisitsperstore <- aggregate(train$Customers, list(train$Store), mean)
+
+avgsalesperstoreperdayofweek <- aggregate(train$Sales, list(train$Store,train$DayOfWeek), mean)
+avgvisitsperstoreperdayofweek <- aggregate(train$Customers, list(train$Store,train$DayOfWeek), mean)
+
+avgsalesperstoreperyear <- aggregate(train$Sales, list(train$Store,train$Year), mean)
+avgvisitsperstoreperyear <- aggregate(train$Customers, list(train$Store,train$Year), mean)
+
+avgsalesperstorepermonth <- aggregate(train$Sales, list(train$Store,train$Year,train$Month), mean)
+avgvisitsperstorepermonth <- aggregate(train$Customers, list(train$Store,train$Month), mean)
+
+```
+
 ```{r}
 # Creating a starting date for Promo2
 train$Promo2SinceDate = as.Date(with(train, paste(Promo2SinceYear,Promo2SinceWeek,1, sep="-")),"%Y-%U-%u")

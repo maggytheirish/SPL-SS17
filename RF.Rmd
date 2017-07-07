@@ -35,6 +35,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 train <- readRDS("train.b1.v1")
 test <- readRDS("test.b1.v1")
+class <- readRDS("class.b1.v1")
 ```
 
 
@@ -74,57 +75,35 @@ plot(rf.caret)
 Predict the outcomes of the test set with the custom results function
 
 ```{r}
-res.rf.caret <- predict(rf.caret, newdata=test)
-```
-
-Selecting important variables
-
-```{r}
-imp <- varImp(rf.caret)$importance
-save(imp,file = "impvarcaret.RDS")
-
-imp$variable <- rownames(imp)
-bestvars <- as.vector(row.names(imp[imp$Overall>=mean(imp$Overall),]))
-
-bestvars <- gsub("email_domaingmx.de","email_domain",bestvars)
-bestvars <- gsub("form_of_addressMr","form_of_address",bestvars)
-bestvars <- gsub("newsletter1","newsletter",bestvars)
-bestvars <- bestvars[-c(5,6)]
-
-frml_rfvars <- as.formula(paste("Sales ~" ,paste(bestvars,collapse ="+"),sep=""))
+res.rf.caret <- as.data.frame(predict(rf.caret, newdata=test))
+sqrt(mean((res.rf.caret-test$Sales)^2))
 ```
 
 ### FINAL RANDOM FOREST ####
 
 ## Run random forest again using the best parameter options as obtained from the model training
 
-Optimal parameters ntree == ??? , mtry== ??? 
+Optimal parameters ntree == 500 , mtry== 10 
 
 ```{r}
-rf_full <- randomForest(Sales~.,data=train,ntree=500,mtry=8,importance=T, do.trace=100)
+rf_full <- randomForest(Sales~.,data=train,ntree=500,mtry=10,importance=T, do.trace=100)
 
 res.rf_full <- predict(rf_full,newdata=test)
 
-res.rf_full$finalscore
-res.rf_full$auc
-
 ```
 
-
-With variables selected from Varimp function
-
-```{r}
-rf_selected<- randomForest(frml_rfvars,data=train,ntree=??,mtry=??,importance=T, do.trace=100)
-
-res.rf_selected <- predict(rf_selected,newdata=test)
-
-res.rf_selected$finalscore
-res.rf_selected$auc
-```
 
 Saving results
 
 ```{r}
 save(rf.caret,file = "rfcaretres.RDS")
+
+save(res.rf.caret,file = "Predictions_test.RDS")
+
+# Predicting on class set 
+
+res.rf.class <- as.data.frame(predict(rf.caret, newdata=class))
+save(res.rf.class,file = "Predictions_class.RDS")
+
 ```
 

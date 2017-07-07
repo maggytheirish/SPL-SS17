@@ -82,31 +82,32 @@ train$Store <- as.factor(train$Store)
 train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
 train <- separate(train, Date, into = c("Year", "Month","Day"), sep="-")
 
-avgsalesperstore <- aggregate(train$Sales, list(train$Store), mean)
-avgvisitsperstore <- aggregate(train$Customers, list(train$Store), mean)
 
-avgsalesperstoreperdayofweek <- aggregate(train$Sales, list(train$Store,train$DayOfWeek), mean)
-avgvisitsperstoreperdayofweek <- aggregate(train$Customers, list(train$Store,train$DayOfWeek), mean)
+features_avg <- setNames(aggregate(train$Sales, list(train$Store), mean),c("Store","AvgSalesPerStore"))
+features1$AvgVisitsPerStore <- aggregate(train$Customers, list(train$Store), mean)[,2]
 
-avgsalesperstoreperyear <- aggregate(train$Sales, list(train$Store,train$Year), mean)
-avgvisitsperstoreperyear <- aggregate(train$Customers, list(train$Store,train$Year), mean)
+features_dow<- setNames(aggregate(train$Sales, list(train$Store,train$DayOfWeek), mean),c("Store","DayOfWeek","AvgSalesPerStorePerDayOfWeek"))
+features2$AvgVisitsPerStorePerDayOfWeek<- aggregate(train$Customers, list(train$Store,train$DayOfWeek), mean)[,3]
 
-avgsalesperstorepermonth <- aggregate(train$Sales, list(train$Store,train$Year,train$Month), mean)
-avgvisitsperstorepermonth <- aggregate(train$Customers, list(train$Store,train$Month), mean)
+features_year <- setNames(aggregate(train$Sales, list(train$Store,train$Year), mean),c("Store","Year","AvgSalesPerStorePerYear"))
+features3$AvgVisitsPerStorePerYear <- aggregate(train$Customers, list(train$Store,train$Year), mean)[,3]
+
+features_mon<- setNames(aggregate(train$Sales, list(train$Store,train$Year,train$Month), mean),c("Store","Year","Month","AvgSalesPerStorePerMonth"))
+features4$AvgVisitsPerStorePerMonth<- aggregate(train$Customers, list(train$Store,train$Year,train$Month), mean)[,4]
 
 ```
 
 ```{r}
-names(avgsalesperstore)[1]<-"Store"
-names(avgsalesperstore)[2]<-"AvgSalesPerStore"
-train<-merge(train, avgsalesperstore, by="Store")
+
+train<-merge(train, features_avg, by="Store")
+train<-merge(train, features_dow, by=c("Store","DayOfWeek"))
+train<-merge(train, features_year, by=c("Store","Year"))
+train<-merge(train, features_mon, by=c("Store","Year","Month"))
+
+
+
 ```
 
-```{r}
-names(avgvisitsperstore)[1]<-"Store"
-names(avgvisitsperstore)[2]<-"AvgVisitsPerStore"
-train<-merge(train, avgvisitsperstore, by="Store")
-```
 
 ```{r}
 # Creating separate test set where sales need to be predicted

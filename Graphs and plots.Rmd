@@ -1,11 +1,11 @@
 ---
-    title: "Graphs and Plots"
+title: "Graphs and Plots"
 author: "Camille"
 date: "19/06/2017"
 output: html_
 ---
     
-    ```{r setup, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -15,35 +15,183 @@ library(zoo)
 library(ggplot2)
 library(forecast)
 library(caret)
+library(reshape2) 
 ```
 
-Load the train and test datasets
 ```{r}
 train<-read.csv("train.csv")
 test<-read.csv("test.csv")
+store<-read.csv("store.csv")
 ```
 
-Plot the dependent variable
+```{r}
+str(train)
+str(store)
+
+#train[, Date := as.Date(Date)]
+
+store
+```
+Plot the total sales per days
 ```{r}
 train_sales <- subset(train, Sales != 0, drop = TRUE)
-hist(aggregate(train_sales$Sales, 
-               by = list(train_sales$Store), mean)$x, 100, 
-     main = "Mean sales per store when store was not closed")
+
+library(plyr)
+
+hist(aggregate(train$Sales, 
+               by = list(train$Store), mean)$x, 100, 
+     main = "Mean sales per store (opened days)")
+
 ```
 
 ```{r}
-hist(train$Sales, 100)
+hist(train_sales$Sales, 100,
+     main = "Overview on sales per day (all stores)")
+
 ```
 
-```{r}
-train_sales <- subset(train, Sales != 0, drop = TRUE)
-hist(aggregate(train_sales$Customers, 
-               by = list(train_sales$Store), mean)$x, 100, 
-     main = "Mean sales per store when store was not closed")
-```
 
 ```{r}
-ggplot(train[Sales != 0], aes(x = factor(SchoolHoliday), y = Sales)) +
+
+bp<-ggplot(train_sales, aes(x = factor(SchoolHoliday) , y = Sales)) +
     geom_jitter(alpha = 0.1) +
     geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA)
+
+bp + ggtitle("Daily sales numbers if school days")
+```
+
+```{r}
+
+train_salcust <- subset(train, Sales != 0 & train$Customers != 0, drop = TRUE)
+
+ggplot(train_salcust,
+       aes(x = log(Customers), y = log(Sales))) + 
+    geom_point(alpha = 0.2) + geom_smooth()
+
+```
+
+```{r}
+
+ggplot(train_salcust,
+       aes(x = factor(Promo), y = Sales)) + 
+    geom_jitter(alpha = 0.1) +
+    geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA)
+```
+
+```{r}
+
+bp2<-ggplot(train_salcust,
+       aes(x = factor(Promo), y = Customers)) + 
+    geom_jitter(alpha = 0.1) +
+    geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA)
+
+bp2 + ggtitle("Daily sales numbers if promotion")
+```
+```{r}
+
+bp3<-ggplot(train_sales,
+       aes(x = factor(DayOfWeek), y = Sales)) + 
+    geom_jitter(alpha = 0.1) + 
+    geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA)
+
+bp3 + ggtitle("Daily sales numbers by day of the week")
+```
+```{r}
+hist(store$CompetitionDistance, 100, main = "Competition distance from stores")
+```
+```{r}
+store$CompetitionOpenSince <- as.yearmon(paste(store$CompetitionOpenSinceYear, 
+                                               store$CompetitionOpenSinceMonth, sep = "-"))
+# One competitor opened 1900
+hist(as.yearmon("2015-10") - store$CompetitionOpenSince, 100, 
+     main = "Years since opening of nearest competition")
+```
+```{r}
+store$Promo2Since <- as.POSIXct(paste(store$Promo2SinceYear, 
+                                   store$Promo2SinceWeek, 1, sep = "-"),
+                             format = "%Y-%U-%u")
+hist(as.numeric(as.POSIXct("2015-10-01", format = "%Y-%m-%d") - store$Promo2Since), 
+     100, main = "Days since start of promo2")
+```
+
+```{r}
+train_store <- merge(train, store, by = "Store")
+
+train_store_sales <- subset(train_store, Sales != 0, drop = TRUE)
+
+ggplot(train_store_sales, aes(x = factor(PromoInterval), y = Sales)) + 
+    geom_jitter(alpha = 0.1) + 
+    geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA)
+
+```
+
+```{r}
+bp4<-ggplot(train_store_sales, 
+       aes(x = as.Date(Date), y = Sales, color = factor(StoreType))) + 
+    geom_smooth(size = 2)
+
+bp4 + ggtitle("Sales over time by store type")
+```
+
+```{r}
+bp5<-ggplot(train_store_sales, 
+       aes(x = as.Date(Date), y = Customers, color = factor(StoreType))) + 
+    geom_smooth(size = 2)
+
+bp5 + ggtitle("Customers over time by store type")
+
+```
+
+```{r}
+ggplot(train_store_sales, 
+       aes(x = as.Date(Date), y = Sales)) + 
+    geom_smooth(size = 2)
+```
+
+```{r}
+ggplot(train_store_sales, 
+       aes(x = Store, y = Sales, color="darkred")) + 
+    geom_smooth(size = 2)
+
+```
+
+```{r}
+bp6<-ggplot(train_store_sales, 
+       aes(x = as.Date(Date), y = Sales, color = factor(Assortment))) + 
+    geom_smooth(size = 2)
+
+bp6 + ggtitle("Sales over time by assortment")
+```
+
+```{r}
+bp7<-ggplot(train_store_sales, 
+       aes(x = as.Date(Date), y = Customers, color = factor(Assortment))) + 
+    geom_smooth(size = 2)
+
+bp7 + ggtitle("Customers over time by assortment")
+```
+
+```{r}
+t<-table(Assortment = train_store$Assortment, StoreType = train_store$StoreType) 
+x<-melt(t) 
+ggplot(x, aes(Assortment, StoreType,color=Assortment)) + geom_point(aes(size = value), alpha=0.8,show_guide=FALSE) + geom_text(aes(label = value), color="white") + scale_size(range = c(10,38))
+```
+
+```{r}
+train_store_sub<-subset(train_store, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
+
+salesByDist <- aggregate(train_store_sub$Sales, 
+               by = list(train_store_sub$CompetitionDistance), mean)
+colnames(salesByDist) <- c("CompetitionDistance", "MeanSales")
+
+ggplot(salesByDist, aes(x = log(CompetitionDistance), y = log(MeanSales))) + 
+    geom_point() + geom_smooth()
+```
+
+```{r}
+ggplot(train_store_sales,
+       aes(x = factor(!is.na(CompetitionOpenSinceYear)), y = Sales)) +
+    geom_jitter(alpha = 0.1) +
+    geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA) +
+    ggtitle("Mean sales by competition presence ")
 ```

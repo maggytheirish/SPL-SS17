@@ -4,30 +4,9 @@ author: "Margarita"
 date: "01/07/2017"
 output: html_document
 ---
-#This script creates new features and splits the dataset for training and testing
 ```{r}
 # This script creates new features and splits the dataset for training and testing
 train = readRDS("train")  # Load the clean dataset
-```
-
-# Adding features with mean sales 
-```{r}
-train$Store <- as.factor(train$Store)
-train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
-train <- separate(train, Date, into = c("Year", "Month","Day"), sep="-")
-
-avgsalesperstore <- aggregate(train$Sales, list(train$Store), mean)
-avgvisitsperstore <- aggregate(train$Customers, list(train$Store), mean)
-
-avgsalesperstoreperdayofweek <- aggregate(train$Sales, list(train$Store,train$DayOfWeek), mean)
-avgvisitsperstoreperdayofweek <- aggregate(train$Customers, list(train$Store,train$DayOfWeek), mean)
-
-avgsalesperstoreperyear <- aggregate(train$Sales, list(train$Store,train$Year), mean)
-avgvisitsperstoreperyear <- aggregate(train$Customers, list(train$Store,train$Year), mean)
-
-avgsalesperstorepermonth <- aggregate(train$Sales, list(train$Store,train$Year,train$Month), mean)
-avgvisitsperstorepermonth <- aggregate(train$Customers, list(train$Store,train$Month), mean)
-
 ```
 
 ```{r}
@@ -96,6 +75,37 @@ summary(train)
 #date_num = c("Year", "Month", "Day", "Promo2SinceYear","Promo2SinceMonth","Promo2SinceDay","CompetitionSinceYear", "CompetitionSinceMonth", "CompetitionSinceDay")
 #train[,date_num]=lapply(train[,date_num],as.integer)
 
+```
+# Adding features with mean sales 
+```{r}
+train$Store <- as.factor(train$Store)
+train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
+train <- separate(train, Date, into = c("Year", "Month","Day"), sep="-")
+
+avgsalesperstore <- aggregate(train$Sales, list(train$Store), mean)
+avgvisitsperstore <- aggregate(train$Customers, list(train$Store), mean)
+
+avgsalesperstoreperdayofweek <- aggregate(train$Sales, list(train$Store,train$DayOfWeek), mean)
+avgvisitsperstoreperdayofweek <- aggregate(train$Customers, list(train$Store,train$DayOfWeek), mean)
+
+avgsalesperstoreperyear <- aggregate(train$Sales, list(train$Store,train$Year), mean)
+avgvisitsperstoreperyear <- aggregate(train$Customers, list(train$Store,train$Year), mean)
+
+avgsalesperstorepermonth <- aggregate(train$Sales, list(train$Store,train$Year,train$Month), mean)
+avgvisitsperstorepermonth <- aggregate(train$Customers, list(train$Store,train$Month), mean)
+
+```
+
+```{r}
+names(avgsalesperstore)[1]<-"Store"
+names(avgsalesperstore)[2]<-"AvgSalesPerStore"
+train<-merge(train, avgsalesperstore, by="Store")
+```
+
+```{r}
+names(avgvisitsperstore)[1]<-"Store"
+names(avgvisitsperstore)[2]<-"AvgVisitsPerStore"
+train<-merge(train, avgvisitsperstore, by="Store")
 ```
 
 ```{r}

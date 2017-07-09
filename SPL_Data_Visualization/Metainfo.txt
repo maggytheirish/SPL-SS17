@@ -1,0 +1,13 @@
+Name of Quantlet: SPL_Data_Visualisation
+ 
+Published in:     Statistical programming languages - Student Project on ''Predicting Sales Using Machine Learning''
+  
+Description:      Visualises the cleaned dataset using plots
+ 
+Keywords:         plot, summary, statistics, graphical representation, data visualization
+
+Author:           Margarita Kostina
+
+Submitted:        Wednesday, July 12 2017 by Margarita Kostina
+  
+Datafile:         apple.csv, bac.csv, ed.csv, ford.csv, ibm.csv, ms.csv

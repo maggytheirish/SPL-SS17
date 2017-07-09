@@ -3,7 +3,7 @@ Name of Quantlet: SPL_Feature_Engineering
  
 Published in:     Statistical programming languages - Student Project on ''Predicting Sales Using Machine Learning''
   
-Description:      Generates new features
+Description:      Generates new features and splits the dataset into a training set and a holdout set for testing
  
 Keywords:         feature engineering, data mining,  time varying features, forecasting, time-series, scaling
 

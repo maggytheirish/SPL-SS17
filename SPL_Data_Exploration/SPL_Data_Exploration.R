@@ -1,27 +1,45 @@
 # Loading necessary packages
-
 library(data.table)
 library(zoo)
 library(ggplot2)
 library(forecast)
 library(caret)
+train = readRDS("FullSet")
+#
+ggplot(train ,aes(x=Store, y= AvgSalesPerStore, color=Promo, shape=Promo)) + geom_point() +
+    scale_color_brewer(palette="Set2") +
+    ggtitle("Average Sales Per Store by Promo") +
+    labs(x="Store",y="Average Sales Per Store") 
+#
+train_sub<-subset(train, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
 
-# Loading the train and test datasets
+salesByDist <- aggregate(train_sub$AvgSalesPerStore, 
+               by = list(train_sub$CompetitionDistance), mean)
+colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
 
-train=read.csv("train.csv")
-store=read.csv("store.csv")
+ggplot(salesByDist, aes(x = CompetitionDistance, y = AvgSalesPerStore)) + 
+    geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
+    ggtitle("Average Sales Per Store by Competition Distance") +
+    labs(x="Competition Distance",y="Average Sales Per Store")
+#
+train_sub<-subset(train, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
 
-# Plot the dependent variable
+salesByDist <- aggregate(train_sub$AvgSalesPerStore, 
+               by = list(train_sub$CompetitionDistance), mean)
+colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
 
-train_sales = subset(train, Sales != 0, drop = TRUE)
-hist(aggregate(train_sales$Sales, 
-               by = list(train_sales$Store), mean)$x, 100, 
-     main = "Mean sales per store when store was not closed")
-hist(train$Sales, 100)
-train_sales = subset(train, Sales != 0, drop = TRUE)
-hist(aggregate(train_sales$Customers, 
-               by = list(train_sales$Store), mean)$x, 100, 
-     main = "Mean sales per store when store was not closed")
-ggplot(train[Sales != 0], aes(x = factor(SchoolHoliday), y = Sales)) +
-    geom_jitter(alpha = 0.1) +
-    geom_boxplot(color = "yellow", outlier.colour = NA, fill = NA)
+ggplot(salesByDist, aes(x = log(CompetitionDistance), y = log(AvgSalesPerStore))) + 
+    geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
+    ggtitle("Log of Average Sales per Store by Log of Competition Distance") +
+    labs(x="Log (Competition Distance)",y="Log (Average Sales Per Store)") 
+#
+ggplot(train, aes(x = as.Date(NewDate), y = AvgSalesPerStorePerMonth)) +
+    geom_smooth(size = 2) +
+    ggtitle("Average Sales Per Store Per Month over Time") +
+    labs(x="Date",y="Average Sales Per Store Per Month") 
+#
+ggplot(train, 
+        aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
+        geom_smooth(size = 2) + 
+        ggtitle("Average Customers Per Store Per Month over Time") +
+        labs(x="Date",y="Average Customers Per Store Per Month") 

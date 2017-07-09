@@ -109,7 +109,8 @@ train<-merge(train, features_year, by=c("Store","Year"))
 train<-merge(train, features_mon, by=c("Store","Year","Month"))
 
 summary(train)
-
+train$NewDate = as.Date(paste(train$NewDate,sep="-"),format= "%Y-%m-%d")
+saveRDS(train,"FullSet")
 ```
 
 
@@ -125,8 +126,8 @@ train$NewDate = as.factor(train$NewDate)
 set.seed(123)
 idx = createDataPartition(train$NewDate, p=0.05, list = F)
 train_set = train[idx, ]
-train_set$NewDate = NULL
-newdata_set$NewDate = NULL
+#train_set$NewDate = NULL
+#newdata_set$NewDate = NULL
 
 
 # Check the datasets

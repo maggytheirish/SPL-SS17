@@ -2,7 +2,7 @@
 title: "Graphs and Plots"
 author: "Camille"
 date: "19/06/2017"
-output: html_document
+output: html_
 ---
     
 ```{r setup, include=FALSE}
@@ -19,9 +19,9 @@ library(reshape2)
 ```
 
 ```{r}
-train<-readRDS("train.b1.v3")
+train<-readRDS("FullSet")
 
-train$NewDate = as.Date(paste(train$NewDate,sep="-"),format= "%Y-%m-%d")
+#train$NewDate = as.Date(paste(train$NewDate,sep="-"),format= "%Y-%m-%d")
 
 summary(train)
 ```
@@ -54,8 +54,8 @@ colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
 
 ggplot(salesByDist, aes(x = log(CompetitionDistance), y = log(AvgSalesPerStore))) + 
     geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
-    ggtitle("Log of Average Sales Per Store by Log of Competition Distance") +
-    labs(x="Log(Competition Distance)",y="Log(Average Sales Per Store)") 
+    ggtitle("Log of Average Sales per Store by Log of Competition Distance") +
+    labs(x="Log (Competition Distance)",y="Log (Average Sales Per Store)") 
 ```
 
 ```{r}

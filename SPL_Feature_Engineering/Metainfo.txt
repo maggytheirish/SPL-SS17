@@ -5,7 +5,7 @@ Published in:     Statistical programming languages - Student Project on ''Predi
   
 Description:      Generates new features and splits the dataset into a training set and a holdout set for testing
  
-Keywords:         feature engineering, data mining,  time varying features, forecasting, time-series, scaling
+Keywords:         feature engineering, data mining,  time varying , forecast, time-series, scaling, data adjustment
 
 Author:           Margarita Kostina, Jayalakshmi Choodamani, Camille Remigereau
 

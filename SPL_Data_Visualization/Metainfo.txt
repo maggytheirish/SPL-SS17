@@ -1,10 +1,10 @@
-Name of Quantlet: SPL_Data_Visualisation
+Name of Quantlet: SPL_Feature_Engineering
  
 Published in:     Statistical programming languages - Student Project on ''Predicting Sales Using Machine Learning''
   
-Description:      Visualises the cleaned dataset using plots
+Description:      Generates new features
  
-Keywords:         plot, summary, statistics, graphical representation, data visualization
+Keywords:         
 
 Author:           Margarita Kostina
 

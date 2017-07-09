@@ -2,7 +2,7 @@
 title: "Graphs and Plots"
 author: "Camille"
 date: "19/06/2017"
-output: html_
+output: html_document
 ---
     
 ```{r setup, include=FALSE}

@@ -2,7 +2,7 @@
 title: "Graphs and Plots"
 author: "Camille"
 date: "19/06/2017"
-output: html_
+output: html_document
 ---
     
 ```{r setup, include=FALSE}
@@ -42,7 +42,7 @@ colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
 
 ggplot(salesByDist, aes(x = CompetitionDistance, y = AvgSalesPerStore)) + 
     geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
-    ggtitle("Average Sales Per Store by competition distance") +
+    ggtitle("Average Sales Per Store by Competition Distance") +
     labs(x="Competition Distance",y="Average Sales Per Store") 
 ```
 ```{r}
@@ -54,7 +54,7 @@ colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
 
 ggplot(salesByDist, aes(x = log(CompetitionDistance), y = log(AvgSalesPerStore))) + 
     geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
-    ggtitle("Log of average sales per store by log of competition distance") +
+    ggtitle("Log of Average Sales Per Store by Log of Competition Distance") +
     labs(x="Log(Competition Distance)",y="Log(Average Sales Per Store)") 
 ```
 

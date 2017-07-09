@@ -4,10 +4,10 @@ Published in:     Statistical programming languages - Student Project on ''Predi
   
 Description:      Generates new features
  
-Keywords:         
+Keywords:         feature engineering, data mining,  time varying features, forecasting, time-series, scaling
 
-Author:           Margarita Kostina
+Author:           Margarita Kostina, Jayalakshmi Choodamani, Camille Remigereau
 
 Submitted:        Wednesday, July 12 2017 by Margarita Kostina
   
-Datafile:         apple.csv, bac.csv, ed.csv, ford.csv, ibm.csv, ms.csv
+Datafile:         train.rds

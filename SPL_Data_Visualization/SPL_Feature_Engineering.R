@@ -102,6 +102,14 @@ idx.test = createDataPartition(train.set$Sales,p=0.8,list=F)
 train.final = train.set[idx.test, ]
 test.final = train.set[-idx.test, ]
 
+# Pre treatment - use this for modelling
+
+train.final[,c(7,21:28)] = scale(train.final[,c(7,21:28)])
+test.final[,c(7,21:28)] = scale(test.final[,c(7,21:28)])
+newdata.set[,sapply(newdata_set.v2,is.numeric)] = scale(newdata.set[,sapply(newdata.set,is.numeric)])
+
+
+
 # Saving datasets
 saveRDS(train.final,"train")
 saveRDS(test.final,"test")

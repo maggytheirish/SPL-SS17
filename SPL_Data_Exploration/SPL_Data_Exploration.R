@@ -39,7 +39,7 @@ ggplot(train, aes(x = as.Date(NewDate), y = AvgSalesPerStorePerMonth)) +
     ggtitle("Average Sales Per Store Per Month over Time") +
     labs(x = "Date", y = "Average Sales Per Store Per Month") +
     theme_bw()
-# Plotting dynamics of visits per store per month
+# Plotting dynamics of customers per store per month
 ggplot(train, aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
     geom_smooth(size = 2) + 
     ggtitle("Average Customers Per Store Per Month over Time") +

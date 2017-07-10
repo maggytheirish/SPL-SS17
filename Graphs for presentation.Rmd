@@ -4,12 +4,9 @@ author: "Camille"
 date: "19/06/2017"
 output: html_
 ---
-    
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ```{r}
+# Loading necessary packages
 library(data.table)
 library(zoo)
 library(ggplot2)
@@ -19,56 +16,55 @@ library(reshape2)
 ```
 
 ```{r}
+# Loading the full dataset
 train<-readRDS("FullSet")
-
-#train$NewDate = as.Date(paste(train$NewDate,sep="-"),format= "%Y-%m-%d")
-
-summary(train)
 ```
 
 ```{r}
-ggplot(train ,aes(x=Store, y= AvgSalesPerStore, color=Promo, shape=Promo)) + geom_point() +
-    scale_color_brewer(palette="Set2") +
+ggplot(train, aes(x = Store, y = AvgSalesPerStore, color = Promo, shape = Promo)) +
+    geom_point() +
+    scale_color_brewer(palette = "Set2") +
     ggtitle("Average Sales Per Store by Promo") +
-    labs(x="Store",y="Average Sales Per Store") + theme_classic()
+    labs(x = "Store",y = "Average Sales Per Store") + theme_classic()
+ggsave("Average Sales Per Store By Promo.png")
 ```
 
 ```{r}
-train_sub<-subset(train, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
+train.sub = subset(train, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
 
-salesByDist <- aggregate(train_sub$AvgSalesPerStore, 
-               by = list(train_sub$CompetitionDistance), mean)
-colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
+SalesByDist = aggregate(train.sub$AvgSalesPerStore, 
+              by = list(train.sub$CompetitionDistance), mean)
+colnames(SalesByDist) = c("CompetitionDistance", "AvgSalesPerStore")
 
-ggplot(salesByDist, aes(x = CompetitionDistance, y = AvgSalesPerStore)) + 
-    geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
+ggplot(SalesByDist, aes(x = CompetitionDistance, y = AvgSalesPerStore)) + 
+    geom_point() + scale_color_brewer(palette = "Set2") + geom_smooth() +
     ggtitle("Average Sales Per Store by Competition Distance") +
-    labs(x="Competition Distance",y="Average Sales Per Store") + theme_bw()
+    labs(x = "Competition Distance", y = "Average Sales Per Store") + theme_bw()
+ggsave("Sales by Competition Distance.png")
 ```
 ```{r}
-train_sub<-subset(train, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
-
-salesByDist <- aggregate(train_sub$AvgSalesPerStore, 
-               by = list(train_sub$CompetitionDistance), mean)
-colnames(salesByDist) <- c("CompetitionDistance", "AvgSalesPerStore")
-
-ggplot(salesByDist, aes(x = log(CompetitionDistance), y = log(AvgSalesPerStore))) + 
+#Plotting the log of average sales
+ggplot(SalesByDist, aes(x = log(CompetitionDistance), y = log(AvgSalesPerStore))) + 
     geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
     ggtitle("Log of Average Sales per Store by Log of Competition Distance") +
-    labs(x="Log (Competition Distance)",y="Log (Average Sales Per Store)") + theme_bw()
+    labs(x = "Log (Competition Distance)", y = "Log (Average Sales Per Store)") + theme_bw()
+ggsave("Log of Sales by Competition Distance.png")
 ```
 
 ```{r}
+# Plotting dynamics of sales per store per month
 ggplot(train, aes(x = as.Date(NewDate), y = AvgSalesPerStorePerMonth)) +
     geom_smooth(size = 2) +
     ggtitle("Average Sales Per Store Per Month over Time") +
-    labs(x="Date",y="Average Sales Per Store Per Month") + theme_bw()
+    labs(x = "Date", y = "Average Sales Per Store Per Month") + theme_bw()
+ggsave("Average Sales per Store Per Month.png")
 ```
 
 ```{r}
-ggplot(train, 
-        aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
+# Plotting dynamics of customers per store per month
+ggplot(train, aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
         geom_smooth(size = 2) + 
         ggtitle("Average Customers Per Store Per Month over Time") +
-        labs(x="Date",y="Average Customers Per Store Per Month") + theme_bw()
+        labs(x = "Date", y = "Average Customers Per Store Per Month") + theme_bw()
+ggsave("Average Customers per Store Per Month.png")
 ```

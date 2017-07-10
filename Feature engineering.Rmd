@@ -80,8 +80,9 @@ summary(train)
 #train[,date_num]=lapply(train[,date_num],as.integer)
 
 ```
-# Adding features with mean sales 
+
 ```{r}
+# Adding features with mean sales 
 train$Store <- as.factor(train$Store)
 train$Date<-as.Date(paste(train$Date,sep="-"),format= "%Y-%m-%d")
 train <- separate(train, Date, into = c("Year", "Month","Day"), sep="-")

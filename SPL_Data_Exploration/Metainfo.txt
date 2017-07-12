@@ -3,7 +3,7 @@ Name of Quantlet: SPL_Data_Exploration
  
 Published in:     Statistical programming languages - Student Project on ''Predicting Sales Using Machine Learning''
   
-Description:      Explores the cleaned dataset and creates new features to enhance prediction accuracy
+Description:      Explores the cleaned dataset using visualization techniques and creates new features to enhance prediction accuracy
  
 Keywords:         plot, summary, statistics, graphical representation, data visualization, scatterplot
 

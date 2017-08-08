@@ -1,0 +1,34 @@
+---
+title: "PDPs"
+author: "Margarita"
+date: "08/08/2017"
+output: html_document
+---
+## Partial Dependence Plots ##
+
+Xgboost
+```{r}
+library(pdp)
+
+# Set up empty result list
+xgb.partialPlots <- list()
+imp.var.xgb <- c("Open","CompetitionDistance") #only two variables are included for now as an example
+
+for (var in imp.var.xgb) {
+  message("Now calculating for variable ", var)
+  
+  xgb.partialPlots[[var]] <- do.call(partial, list(xgb, pred.var = var, type = "auto", 
+                                                   plot = FALSE))
+}
+
+```
+
+PDPs
+```{r}
+par(mfrow=c(1, 1))
+for(var in names(xgb.partialPlots)){
+  plot(x = xgb.partialPlots[[var]][,1], y = xgb.partialPlots[[var]][,2], type = "l", ylim = c(0.4, 1), xlab = var, ylab="Sales")
+    
+}
+```
+

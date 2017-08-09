@@ -50,9 +50,6 @@ evaluate <- function(model,data,actual){
     print("The descriptive statistics of the actual values")
     print(summary(actual))
     
-    results <- cbind(actual,pred)
-    #View(results)
-    
     # Metric 
     metric <- readline(prompt = "Which metric would you like to use for error analysis?
                        Choose btw rmse,user. If you want to use a specific metric please
@@ -68,14 +65,16 @@ evaluate <- function(model,data,actual){
     # Error decomposition
     mse <- mean((actual-pred)^2)
     abs.error <- sum((actual-pred)^2)
-    bias <- mean(actual) - mean(pred)
+    bias <- sqrt(sum(actual-pred))
     percent.bias <- (rmse-bias)/rmse 
+    actual.skew <- skewness(actual)
+    pred.skew <- skewness(pred)
     diff.skew <- skewness(actual) - skewness(pred)
     
     # Saving results 
     
-    error_matrix <- cbind(rmse,mse,abs.error,bias,percent.bias,diff.skew)
-    #View(error_matrix)
+    error.matrix <- cbind(rmse,mse,abs.error,bias,percent.bias,actual.skew,pred.skew,diff.skew)
+    print(error.matrix)
     
     # Visualization
     
@@ -92,6 +91,10 @@ evaluate <- function(model,data,actual){
     points(x2,y2,col="red")
     
     dist.plot
+    
+    pred <- as.vector(pred)
+    return(pred)
+
    
     
     

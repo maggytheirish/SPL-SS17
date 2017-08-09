@@ -119,7 +119,7 @@ saveRDS(train,"FullSet")
 # Creating separate test set where sales need to be predicted
 train$NewDate = as.Date(paste(train$NewDate,sep="-"),format= "%Y-%m-%d")
 testdate = train$NewDate>="2015-07-20"  # Selecting the last 10 days for forecasting
-newdata_set = train[testdate==T,]
+test = train[testdate==T,]
 train = train[testdate==F,]  # remove test observations
 
 # Creating train dataset
@@ -128,12 +128,12 @@ set.seed(123)
 idx = createDataPartition(train$NewDate, p=0.05, list = F)
 train_set = train[idx, ]
 #train_set$NewDate = NULL
-#newdata_set$NewDate = NULL
+
 
 
 # Check the datasets
 summary(train_set)
-summary(newdata_set)
+
 ```
 
 ```{r}
@@ -144,16 +144,9 @@ newdata_set$Customers = NULL
 train_set$Customers = NULL
 ```
 
-```{r}
-# Create testing and training subsets within the train set
-idx.test = createDataPartition(train_set$Sales,p=0.8,list=F)
-train_final = train_set[idx.test, ]
-test_final = train_set[-idx.test, ]
 
-```
 ```{r}
 # Saving datasets
-saveRDS(train_final,"train.b1.v3")
-saveRDS(test_final,"test.b1.v3")
-saveRDS(newdata_set,"class.b1.v3")
+saveRDS(train_set,"train.b1.v3")
+saveRDS(test,"test.b1.v3")
 ```

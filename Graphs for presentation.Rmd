@@ -96,3 +96,20 @@ ggplot(FullSet, aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
         labs(x = "Date", y = "Average Customers Per Store Per Month") + theme_bw()
 #ggsave("Average Customers per Store Per Month.png")
 ```
+```{r}
+# Partial dependence plots
+xgb.partialPlots <- list() # Set up empty result list
+imp.var.xgb <- c("Open","CompetitionDistance", "Store", "Promo", "CompetitionSinceDate", "Date", "Promo2SinceDate", "StoreType", "Assortment", "Promo2", "DayOfWeek", "StoreAssortmentMatch")
+for (var in imp.var.xgb) {
+  message("Now calculating for variable ", var)
+  
+  xgb.partialPlots[[var]] <- do.call(partial, list(xgb, pred.var = var, type = "auto", 
+                                                   plot = FALSE))
+}
+```
+```{r}
+par(mfrow=c(1, 1))
+for(var in names(xgb.partialPlots)){
+  plot(x = xgb.partialPlots[[var]][,1], y = xgb.partialPlots[[var]][,2], type = "l", xlab = var, ylab="Sales")
+}
+```

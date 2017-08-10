@@ -1,19 +1,13 @@
----
-title: "XGB"
-author: "Margarita"
-date: "18/06/2017"
-output: html_document
----
+
 ```{r}
 train_final<-readRDS("train")
 test_final<-readRDS("test")
 ```
 
-## Gradient Boosting ##
 ```{r}
 set.seed(123)
 ```
-1. Setup the options for model selection/initialize caret framework
+# Setup the options for model selection/initialize caret framework
 ```{r}
 model.control<- trainControl(
   method = "cv", # cross validation
@@ -21,17 +15,7 @@ model.control<- trainControl(
   allowParallel = TRUE # Enable parallelization if available
 )
 ```
-2. Define a search grid of values to test for a sequence of randomly sampled variables as candidates at each split
-```{r}
-#xgb.parms.basic <- expand.grid(nrounds = c(100), 
-#                         max_depth = c(6,8,10), 
-#                        eta = c(0.01,0.05), 
-#                         gamma = 0,
-#                         colsample_bytree = c(0.3,0.5,1),
-#                         min_child_weight = 1, 
-#                         subsample = c(0.5,0.6,0.8,1))
-```
-
+# Defining a search grid of values to test for a sequence of randomly sampled variables as candidates at each split
 ```{r}
 xgb.parms <- expand.grid(nrounds = c(400), 
                          max_depth = c(6,8,10), 
@@ -41,8 +25,7 @@ xgb.parms <- expand.grid(nrounds = c(400),
                          min_child_weight = 1, 
                          subsample = c(0.5,0.6,0.8))
 ```
-
-Optimal parameters
+# Defining optimal parameters
 ```{r}
 xgb.parms.opt <- expand.grid(nrounds = 400, 
                          max_depth = 10, 
@@ -53,10 +36,7 @@ xgb.parms.opt <- expand.grid(nrounds = 400,
                          subsample = 0.6)
 ```
 
-
-## Model 1 ##
-
-3.1 Train gradient boosting model (prob)
+# Training the model
 ```{r}
 xgb <- train(Sales~., data = train_final,  
              method = "xgbTree",
@@ -64,7 +44,7 @@ xgb <- train(Sales~., data = train_final,
              metric = "RMSE", trControl = model.control)
 xgb
 ```
-4.1 Make prediction on test set
+#Making prediction on test set
 ```{r}
 test_final$res.xgb <- predict(xgb, newdata = test_final)
 ```

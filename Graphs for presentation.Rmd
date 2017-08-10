@@ -1,9 +1,3 @@
----
-title: "Graphs and Plots"
-author: "Camille"
-date: "19/06/2017"
-output: html_
----
 
 ```{r}
 # Loading necessary packages
@@ -17,30 +11,64 @@ library(reshape2)
 
 ```{r}
 # Loading the full dataset
-train<-readRDS("FullSet")
+FullSet<-readRDS("FullSet")
 ```
 
 ```{r}
-ggplot(train, aes(x = Store, y = AvgSalesPerStore, color = Promo, shape = Promo)) +
+# Generating an additional date variable
+FullSet$NewDate <- FullSet$Date 
+```
+
+```{r}
+# Adding features with mean sales 
+FullSet$Store <- as.factor(FullSet$Store)
+FullSet$Date<-as.Date(paste(FullSet$Date,sep="-"),format= "%Y-%m-%d")
+FullSet <- separate(FullSet, Date, into = c("Year", "Month","Day"), sep="-")
+
+features_avg <- setNames(aggregate(FullSet$Sales, list(FullSet$Store), mean),c("Store","AvgSalesPerStore"))
+features_avg$AvgVisitsPerStore <- aggregate(FullSet$Customers, list(FullSet$Store), mean)[,2]
+
+features_dow<- setNames(aggregate(FullSet$Sales, list(FullSet$Store,FullSet$DayOfWeek), mean),c("Store","DayOfWeek","AvgSalesPerStorePerDayOfWeek"))
+features_dow$AvgVisitsPerStorePerDayOfWeek<- aggregate(FullSet$Customers, list(FullSet$Store,FullSet$DayOfWeek), mean)[,3]
+
+features_year <- setNames(aggregate(FullSet$Sales, list(FullSet$Store,FullSet$Year), mean),c("Store","Year","AvgSalesPerStorePerYear"))
+features_year$AvgVisitsPerStorePerYear <- aggregate(FullSet$Customers, list(FullSet$Store,FullSet$Year), mean)[,3]
+
+features_mon<- setNames(aggregate(FullSet$Sales, list(FullSet$Store,FullSet$Year,FullSet$Month), mean),c("Store","Year","Month","AvgSalesPerStorePerMonth"))
+features_mon$AvgVisitsPerStorePerMonth<- aggregate(FullSet$Customers, list(FullSet$Store,FullSet$Year,FullSet$Month), mean)[,4]
+```
+
+```{r}
+FullSet<-merge(FullSet, features_avg, by="Store")
+FullSet<-merge(FullSet, features_dow, by=c("Store","DayOfWeek"))
+FullSet<-merge(FullSet, features_year, by=c("Store","Year"))
+FullSet<-merge(FullSet, features_mon, by=c("Store","Year","Month"))
+FullSet$NewDate = as.Date(paste(FullSet$NewDate,sep="-"),format= "%Y-%m-%d")
+varlist<-c("Year", "Month", "Day")
+FullSet[,varlist] = lapply(FullSet[,varlist], factor)
+```
+
+```{r}
+ggplot(FullSet, aes(x = Store, y = AvgSalesPerStore, color = Promo, shape = Promo)) +
     geom_point() +
     scale_color_brewer(palette = "Set2") +
     ggtitle("Average Sales Per Store by Promo") +
     labs(x = "Store",y = "Average Sales Per Store") + theme_classic()
-ggsave("Average Sales Per Store By Promo.png")
+#ggsave("Average Sales Per Store By Promo.png")
 ```
 
 ```{r}
-train.sub = subset(train, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
+FullSet.sub = subset(FullSet, Sales != 0 & !is.na(CompetitionDistance), drop = TRUE)
 
-SalesByDist = aggregate(train.sub$AvgSalesPerStore, 
-              by = list(train.sub$CompetitionDistance), mean)
+SalesByDist = aggregate(FullSet.sub$AvgSalesPerStore, 
+              by = list(FullSet.sub$CompetitionDistance), mean)
 colnames(SalesByDist) = c("CompetitionDistance", "AvgSalesPerStore")
 
 ggplot(SalesByDist, aes(x = CompetitionDistance, y = AvgSalesPerStore)) + 
     geom_point() + scale_color_brewer(palette = "Set2") + geom_smooth() +
     ggtitle("Average Sales Per Store by Competition Distance") +
     labs(x = "Competition Distance", y = "Average Sales Per Store") + theme_bw()
-ggsave("Sales by Competition Distance.png")
+#ggsave("Sales by Competition Distance.png")
 ```
 ```{r}
 #Plotting the log of average sales
@@ -48,23 +76,23 @@ ggplot(SalesByDist, aes(x = log(CompetitionDistance), y = log(AvgSalesPerStore))
     geom_point() + scale_color_brewer(palette="Set2") + geom_smooth() +
     ggtitle("Log of Average Sales per Store by Log of Competition Distance") +
     labs(x = "Log (Competition Distance)", y = "Log (Average Sales Per Store)") + theme_bw()
-ggsave("Log of Sales by Competition Distance.png")
+#ggsave("Log of Sales by Competition Distance.png")
 ```
 
 ```{r}
 # Plotting dynamics of sales per store per month
-ggplot(train, aes(x = as.Date(NewDate), y = AvgSalesPerStorePerMonth)) +
+ggplot(FullSet, aes(x = as.Date(NewDate), y = AvgSalesPerStorePerMonth)) +
     geom_smooth(size = 2) +
     ggtitle("Average Sales Per Store Per Month over Time") +
     labs(x = "Date", y = "Average Sales Per Store Per Month") + theme_bw()
-ggsave("Average Sales per Store Per Month.png")
+#ggsave("Average Sales per Store Per Month.png")
 ```
 
 ```{r}
 # Plotting dynamics of customers per store per month
-ggplot(train, aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
+ggplot(FullSet, aes(x = as.Date(NewDate), y = AvgVisitsPerStorePerMonth)) +
         geom_smooth(size = 2) + 
         ggtitle("Average Customers Per Store Per Month over Time") +
         labs(x = "Date", y = "Average Customers Per Store Per Month") + theme_bw()
-ggsave("Average Customers per Store Per Month.png")
+#ggsave("Average Customers per Store Per Month.png")
 ```

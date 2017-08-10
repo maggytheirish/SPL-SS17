@@ -1,9 +1,4 @@
----
-title: "Data prep and feature eng"
-author: "Margarita"
-date: "10/08/2017"
-output: html_document
----
+
 ```{r}
 #Creating a function to load the packages
 LoadPackages = function(p){
@@ -18,11 +13,10 @@ LoadPackages = function(p){
 
 list.of.packages = c("rpart","lubridate","outliers","rpart.plot", "xgboost",
                       "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
-                      "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
+                      "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo", "formatR","data.table", "zoo", "ggplot2", "forecast", "reshape2")
 
 sapply(list.of.packages,LoadPackages)
 ```
-
 #Loading the datasets
 ```{r}
 ## Read in original datasets
@@ -47,6 +41,7 @@ train$PromoInterval = sub("^$", "missing", train$PromoInterval)
 #Turning numeric variables into factor variables
 varlist = c("StoreType", "Assortment", "Promo2","DayOfWeek", "Open", "Promo", "StateHoliday", "SchoolHoliday", "PromoInterval")
 train[,varlist] = lapply(train[,varlist], factor)
+#Formatting the date variable
 train$Date<-as.Date(train$Date)
 ```
 
@@ -109,7 +104,12 @@ train$Promo2SinceDate[is.na(train$Promo2SinceDate)] = mean(train$Promo2SinceDate
 
 ```{r}
 unused.vars<-c("Promo2SinceWeek", "Promo2SinceYear", "CompetitionOpenSinceYear", "CompetitionOpenSinceMonth")
-train[unused.vars] = NULL
+train[,unused.vars] = NULL
+```
+
+```{r}
+#Save a full dataset for data exploration use
+saveRDS(train,"FullSet")
 ```
 
 ```{r}
@@ -139,7 +139,6 @@ train_set$Customers = NULL
 ```{r}
 str(test)
 ```
-
 
 ```{r}
 # Saving datasets

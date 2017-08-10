@@ -5,9 +5,8 @@ date: "18/06/2017"
 output: html_document
 ---
 ```{r}
-train_final<-readRDS("train.b1.v1")
-test_final<-readRDS("test.b1.v1")
-newdata_set<-readRDS("class.b1.v1")
+train_final<-readRDS("train")
+test_final<-readRDS("test")
 ```
 
 ## Gradient Boosting ##
@@ -19,8 +18,7 @@ set.seed(123)
 model.control<- trainControl(
   method = "cv", # cross validation
   number = 5, # number of folds in cross validation
-  allowParallel = TRUE, # Enable parallelization if available
-  # We will use this to plot partial dependence
+  allowParallel = TRUE # Enable parallelization if available
 )
 ```
 2. Define a search grid of values to test for a sequence of randomly sampled variables as candidates at each split
@@ -85,9 +83,3 @@ Variable importance
 xgb.varImp <- varImp(xgb, scale=TRUE)
 xgb.varImp
 ```
-Chi-square test to confirm variable importance - to be continued
-```{r}
-test <- chisq.test(train_final$Open)
-print(test)
-```
-

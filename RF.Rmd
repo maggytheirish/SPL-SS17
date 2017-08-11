@@ -1,41 +1,7 @@
----
-title: "Random Forest"
-author: "Camille"
-date: "17/06/2017"
-output: html_document
----
-Loading the required packages
-```{r}
-load_packages  <- function(p){
-  
-  for(i in seq_along(p)) {
-    if(!require(p[i], character.only=TRUE)) {
-      install.packages(p[i])}
-      library(p[i], character.only=TRUE)
-  }
-
-}
-
-list.of.packages <- c("rpart","lubridate","outliers","rpart.plot", "xgboost",
-                      "caret","caretEnsemble", "randomForest","e1071","pROC", "tidyr", "klaR", 
-                      "car","devtools","yamldebugger","mlbench","Hmisc", "ggvis","relaimpo")
-
-sapply(list.of.packages,load_packages)
-```
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-##### MODEL TRAINING USING CARET ####
-
-### Loading the dataset ####
-
 
 ```{r}
-train <- readRDS("train.b1.v1")
-test <- readRDS("test.b1.v1")
-class <- readRDS("class.b1.v1")
+train <- readRDS("train")
+test <- readRDS("test")
 ```
 
 
@@ -60,11 +26,9 @@ Model training using caret
 rf.caret <- train(Sales~., data = train,  
                   method = "rf", ntree =500, tuneGrid = rf.parms, 
                   metric = "RMSE", trControl = model.control, verboseIter=T, do.trace=100)
+rf.caret
 ```
-
-
 Performance metrics and results 
-
 ```{r}
 rf.caret$results
 rf.caret$finalModel
@@ -78,27 +42,20 @@ Predict the outcomes of the test set with the custom results function
 res.rf.caret <- as.data.frame(predict(rf.caret, newdata=test))
 sqrt(mean((res.rf.caret-test$Sales)^2))
 ```
-
-### FINAL RANDOM FOREST ####
-
-## Run random forest again using the best parameter options as obtained from the model training
-
-Optimal parameters ntree == 500 , mtry== 10 
+# Run random forest again using the best parameter options as obtained from the model training
+# Optimal parameters ntree == 500 , mtry== 10 
 
 ```{r}
 rf_full <- randomForest(Sales~.,data=train,ntree=500,mtry=10,importance=T, do.trace=100)
-
-res.rf_full <- predict(rf_full,newdata=test)
-
+res.rf_full <- predict(rf_full, newdata=test)
 ```
-
 
 Saving results
 
 ```{r}
-save(rf.caret,file = "rfcaretres.RDS")
+save(rf.caret, file = "rfcaretres.RDS")
 
-save(res.rf.caret,file = "Predictions_test.RDS")
+save(res.rf.caret, file = "Predictions_test.RDS")
 
 # Predicting on class set 
 

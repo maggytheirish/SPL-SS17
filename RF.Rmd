@@ -3,10 +3,7 @@
 train <- readRDS("train")
 test <- readRDS("test")
 ```
-
-
-Setting model control parameters 
-
+# Setting model control parameters 
 ```{r}
 k <- 5
 set.seed(123)
@@ -21,46 +18,38 @@ model.control <- trainControl(
 rf.parms <- expand.grid(mtry = 1:10)
 ```
 
-Model training using caret
+# Model training using caret
 ```{r}
 rf.caret <- train(Sales~., data = train,  
                   method = "rf", ntree =500, tuneGrid = rf.parms, 
                   metric = "RMSE", trControl = model.control, verboseIter=T, do.trace=100)
-rf.caret
 ```
-Performance metrics and results 
+# Performance metrics and results 
 ```{r}
 rf.caret$results
 rf.caret$finalModel
-
 plot(rf.caret)
 ```
-
-Predict the outcomes of the test set with the custom results function
-
+# Predict the outcomes of the test set with the custom results function
 ```{r}
 res.rf.caret <- as.data.frame(predict(rf.caret, newdata=test))
 sqrt(mean((res.rf.caret-test$Sales)^2))
 ```
 # Run random forest again using the best parameter options as obtained from the model training
 # Optimal parameters ntree == 500 , mtry== 10 
-
 ```{r}
-rf_full <- randomForest(Sales~.,data=train,ntree=500,mtry=10,importance=T, do.trace=100)
-res.rf_full <- predict(rf_full, newdata=test)
+rf.full <- randomForest(Sales~.,data = train,ntree = 500,mtry = 10,importance = T, do.trace = 100)
+res.rf.full <- as.data.frame(predict(rf.full, newdata = test))
 ```
-
-Saving results
-
+# Saving results
 ```{r}
-save(rf.caret, file = "rfcaretres.RDS")
+save(rf.full, file = "rfcaretres.RDS")
 
-save(res.rf.caret, file = "Predictions_test.RDS")
+save(res.rf.full, file = "Predictions_test.RDS")
 
 # Predicting on class set 
-
-res.rf.class <- as.data.frame(predict(rf.caret, newdata=class))
-save(res.rf.class,file = "Predictions_class.RDS")
+#res.rf.class <- as.data.frame(predict(rf.caret, newdata=class))
+#save(res.rf.class,file = "Predictions_class.RDS")
 
 ```
 

@@ -45,5 +45,10 @@ save_prediction <- function(modelname,modelresults,dataset){
   saveRDS(Predictions_test,"Predictions_test.RDS")
 }
 
+# Evaluation metric
+
+rmse <- function(actual,pred){
+  error <- sqrt(mean((actual-pred)^2))
+  return(error)}
 
 

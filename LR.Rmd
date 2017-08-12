@@ -13,7 +13,8 @@ test = readRDS("test")
 ```{r}
 lr<- lm(Sales~.,data = train)
 summary(lr)
-pred<-predict.lm(lr, newdata = train)
+pred<-as.data.frame(predict.lm(lr, newdata = test))
+save.prediction(lr,pred, Predictions_test)
 ```
 
 ```{r}

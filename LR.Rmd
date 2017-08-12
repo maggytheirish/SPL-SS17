@@ -1,10 +1,4 @@
----
-title: "Linear regression"
-author: "Margarita"
-date: "16/06/2017"
-output: html_document
----
-
+# Load the datasets
 ```{r}
 train = readRDS("train")
 test = readRDS("test")
@@ -13,8 +7,9 @@ test = readRDS("test")
 ```{r}
 lr<- lm(Sales~.,data = train)
 summary(lr)
-pred<-as.data.frame(predict.lm(lr, newdata = test))
-save.prediction(lr,pred, Predictions_test)
+pred = predict.lm(lr, newdata = test)
+save.prediction("lr", pred)
+Predictions_test <- readRDS("Predictions_test.RDS")
 ```
 
 ```{r}
@@ -36,11 +31,11 @@ xyplot(values ~ x, data = res, group = ind, auto.key = TRUE)
 ```
 ```{r}
 #library(plm)
-fixed <- plm(Sales~ StoreType + Assortment + CompetitionDistance + Promo2 + PromoInterval + DayOfWeek + Open + Promo + StateHoliday + SchoolHoliday + Promo2SinceDate + CompetitionSinceDate + StoreAssortmentMatch + CompetitionPresent + BothHolidays, data=train, index=c("Store","Date"), model="within")
-summary(fixed)
+#fixed <- plm(Sales~ StoreType + Assortment + CompetitionDistance + Promo2 + PromoInterval + DayOfWeek + Open + Promo + StateHoliday + SchoolHoliday + Promo2SinceDate + CompetitionSinceDate + StoreAssortmentMatch + CompetitionPresent + BothHolidays, data=train, index=c("Store","Date"), model="within")
+#summary(fixed)
 ```
 ```{r}
-fitted <- as.numeric(fixed$model[[1]] - fixed$residuals) 
-fitted
+#fitted <- as.numeric(fixed$model[[1]] - fixed$residuals) 
+#fitted
 ```
 

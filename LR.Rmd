@@ -6,34 +6,27 @@ output: html_document
 ---
 
 ```{r}
-train_final.v2<-readRDS("train.b1.v2")
-test_final.v2<-readRDS("test.b1.v2")
-newdata_set.v2<-readRDS("class.b1.v2")
-
-summary(train_final.v2)
+train = readRDS("train")
+test = readRDS("test")
 ```
 
 ```{r}
-lr<- lm(Sales~ .,data = train_final.v2)
+lr<- lm(Sales~.,data = train)
 summary(lr)
-pred<-predict.lm(lr, newdata = train_final.v2)
+pred<-predict.lm(lr, newdata = train)
 ```
 
 ```{r}
-pred
-```
-```{r}
-calc.relimp(lr,type=c("lmg","last","first","pratt"),
-   rela=TRUE)
+rmse(pred, Predictions_test$actual)
 ```
 
 
 ```{r}
 
-train_final.v2$Date<-as.Date(train_final.v2$Date)
+train$Date<-as.Date(train$Date)
 
-res <- stack(data.frame(Observed = train_final.v2$Sales, Predicted = fitted(lr)))
-res <- cbind(res, x = rep(train_final.v2$Date, 2))
+res <- stack(data.frame(Observed = train$Sales, Predicted = fitted(lr)))
+res <- cbind(res, x = rep(train$Date, 2))
 head(res)
 
 require("lattice")
@@ -41,8 +34,8 @@ require("lattice")
 xyplot(values ~ x, data = res, group = ind, auto.key = TRUE)
 ```
 ```{r}
-library(plm)
-fixed <- plm(Sales~ StoreType + Assortment + CompetitionDistance + Promo2 + PromoInterval + DayOfWeek + Open + Promo + StateHoliday + SchoolHoliday + Promo2SinceDate + CompetitionSinceDate + StoreAssortmentMatch + CompetitionPresent + BothHolidays, data=train_final.v2, index=c("Store","Date"), model="within")
+#library(plm)
+fixed <- plm(Sales~ StoreType + Assortment + CompetitionDistance + Promo2 + PromoInterval + DayOfWeek + Open + Promo + StateHoliday + SchoolHoliday + Promo2SinceDate + CompetitionSinceDate + StoreAssortmentMatch + CompetitionPresent + BothHolidays, data=train, index=c("Store","Date"), model="within")
 summary(fixed)
 ```
 ```{r}

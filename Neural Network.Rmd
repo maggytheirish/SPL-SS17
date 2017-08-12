@@ -1,15 +1,10 @@
----
-title: "Neural Network"
-date: "23/06/2017"
-output: html_document
----
 ```{r}
 set.seed(123)
 library(neuralnet)
 ```
 
 ```{r}
-#Specifying the model parameters
+# Specifying the model parameters
 nn.ctrl= trainControl(
   method = "cv", # cross-validation
   number = 5, # number of folds 
@@ -23,10 +18,10 @@ nn.parms = expand.grid(decay = c(0, 10^seq(-3, 0, 1)), size = seq(3,4,5), bag=FA
 ```
 Training the model on the full set of variables
 ```{r}
-nn.train = train(Sales~., data = train_final2,  
+nn.train = train(Sales~., data = train_final,  
             method = "avNNet", maxit = 1000,preProc = c("center", "scale"), trace = FALSE,
             tuneGrid = nn.parms, # parameters to be tested
-            metric = "RMSE", trControl = nn.ctrl, linout=1, MaxNWts=5000)
+            metric = "RMSE", trControl = nn.ctrl, linout = 1, MaxNWts = 5000)
 ```
 Plotting the neural network
 ```{r}
@@ -34,16 +29,18 @@ plot(nn.train)
 ```
 Predicting on the test set
 ```{r}
-pr.nn=predict(nn.train, newdata=test_final2)
+pr.nn = as.data.frame(predict(nn.train, newdata=test_final))
 ```
+
+```{r}
+save(pr.nn, file = "pr.nn.RDS")
+save(nn.train, file = "neuralnetwork.RDS")
+```
+
 RMSE calculation
 ```{r}
 RMSE=sqrt(mean((test_final2$Sales-pr.nn)^2))
 RMSE
 res.nnet=RMSE/nrow(test_final)
 res.nnet
-```
-Variable importance
-```{r}
-nn.varimp=varImp(nn.train, scale=FALSE)
 ```

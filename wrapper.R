@@ -92,7 +92,6 @@ evaluate <- function(model,data,actual){
     
     pred <- as.vector(pred)
     return(pred)
-    return(error.matrix)
     
   }}
 

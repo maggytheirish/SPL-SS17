@@ -51,7 +51,7 @@ train_models <- function(data, test, method){
     nup <- n+5
     tuneGrid <- expand.grid(mtry = nd:nup,ntree=500)
   } else if(method=="nnet"){
-    tuneGrid <- expand.grid(.decay = c(0.5, 0.1), .size = c(5, 6, 7))
+    tuneGrid <- expand.grid(.decay = c(0, 10^seq(-3, 0, 1)), .size = c(3, 4, 5))
   } else if(method=="lm"){
     tuneGrid <- NULL
   }

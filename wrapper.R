@@ -90,7 +90,7 @@ evaluate <- function(model,data,actual){
     
     dist.plot
     
-    pred <- as.vector(pred)
+    pred <- as.vector(round(pred))
     return(pred)
     
   }}

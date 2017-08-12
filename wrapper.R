@@ -15,28 +15,23 @@ evaluate <- function(model,data,actual){
     stats <- summary(probabilities)
     print("Descriptive statistics for the prediction probabilities : ")
     print(stats)
-    
-    # Classifying using different threshold values
-    
-    tgt <- readline(prompt = " Is the target variable numeric? It needs to be labelled for
-                    models other than lr")
-    pos <- readline(prompt = "Enter positive case of the factor variable")
-    neg <- readline(prompt = "Enter negative case of the factor variable")
-
-      print("Classification using mean, median, 3rd quadrant values of the probabilities as thresholds")
       
-      pred_random <- ifelse(probabilities>=0.5,pos,neg)
-      pred_mean <- ifelse(probabilities>=stats[3],pos,neg) 
-      pred_median <- ifelse(probabilities>=stats[4],pos,neg)
-      pred_3quad <- ifelse(probabilities>=stats[5],pos,neg)
-      
-      threshold <- readline(prompt = "Do you want to use a specific threshold for classification?
+    threshold <- readline(prompt = "Do you want to use a specific threshold for classification?
                       Type in the numerical threshold value if not type 'no'")
-      if(threshold=="no"){
+      
+    if(threshold=="no"){
         print("You have chosen to use a default threshold")
+        print("Classification using 0.5,mean of the probabilities as thresholds")
+        
+        pred_random <- ifelse(probabilities>=0.5,pos,neg)
+        pred_mean <- ifelse(probabilities>=stats[3],pos,neg) 
+        
       } else { pred_user <- ifelse(probabilities>=as.numeric(threshold),pos,neg)}
       
       # Display results
+      print("Random Classification")
+      print(table(pred_random))
+      
       print("Threshold - Mean")
       print(table(pred_mean))
       
@@ -44,10 +39,11 @@ evaluate <- function(model,data,actual){
     
     # Predictions
     pred <- predict(model,data)
+    pred <- ifelse(pred<=0,0,pred) ## Removing negative values
     
-    print("The descriptive statistics of the predicted values")
+    cat("\n","The descriptive statistics of the predicted values","\n")
     print(summary(pred))
-    print("The descriptive statistics of the actual values")
+    cat("\n","The descriptive statistics of the actual values","\n")
     print(summary(actual))
     
     # Metric 
@@ -56,24 +52,25 @@ evaluate <- function(model,data,actual){
                        add it to the helper function and name it as user.")
     
     if(metric=="rmse"){
-      #error <- rmse(actual,pred) add rmse to helper function
-      rmse <- sqrt(mean((actual-pred)^2))
-      print(paste0("The prediction error is :",rmse))
+
+      error <- rmse(actual,pred)
+      cat(paste0("\n","The prediction error is : ",error))
     }else{ error <- user(actual,pred)}
     
     
     # Error decomposition
     mse <- mean((actual-pred)^2)
-    abs.error <- sum((actual-pred)^2)
-    bias <- sqrt(sum(actual-pred))
-    percent.bias <- (rmse-bias)/rmse 
+    bias <- abs(mean(actual) - mean(pred))
+    variance <- var(actual,pred)  
+    unexplained <- abs(mse - (bias^2+variance))/mse
     actual.skew <- skewness(actual)
-    pred.skew <- skewness(pred)
-    diff.skew <- skewness(actual) - skewness(pred)
+    predicted.skew <- skewness(pred)
     
     # Saving results 
     
-    error.matrix <- cbind(rmse,mse,abs.error,bias,percent.bias,actual.skew,pred.skew,diff.skew)
+    error.matrix <- cbind(error,mse,bias,variance,unexplained,
+                          actual.skew,predicted.skew)
+    cat("\n","Decomposing the error : ","\n")
     print(error.matrix)
     
     # Visualization
@@ -84,20 +81,18 @@ evaluate <- function(model,data,actual){
     x2 = pred
     y2 = dnorm(pred,mean = mean(pred),sd=sd(pred))
     
-    print("Plotting the distributions of the actual and predicted values - green actual
-          red predicted")
+    cat("\n","Plotting the distributions of the actual and predicted values - green actual,red predicted")
     
-    dist.plot <- plot(x1,y1,col="green", xlim=range(c(x1,x2)),ylim=range(c(y1,y2)))
+    dist.plot <- plot(x1,y1,col="green", xlim=range(c(x1,x2)),ylim=range(c(y1,y2)),
+                      xlab = "Sales",ylab = "Normalized Sales")
     points(x2,y2,col="red")
+    legend("topright",legend=c("Actual","Predicted"),fill=c("green","red"))
     
     dist.plot
     
     pred <- as.vector(pred)
     return(pred)
-
-   
-    
-    
+    return(error.matrix)
     
   }}
 

@@ -1,0 +1,30 @@
+Call:
+ randomForest(formula = Sales ~ ., data = train, ntree = 500,      mtry = 12) 
+               Type of random forest: regression
+                     Number of trees: 500
+No. of variables tried at each split: 12
+
+          Mean of squared residuals: 1550640
+                    % Var explained: 89.41
+> rf.res = evaluate(rf.model,"Random Forest",test,Predictions_test$actual)
+[1] "This is an interactive function. Please type in your responses in the console :"
+Type your response - Classification or Regression : Regression
+
+ The descriptive statistics of the predicted values 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0    5226    6717    6719    8338   28330 
+
+ The descriptive statistics of the actual values 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0    4598    6233    6475    8227   32550 
+
+ Which metric would you like to use for error analysis? 
+ If you want to use a specific metric please add it to the helper function and name it as user.
+Choose metric - rmse,user : rmse
+
+The prediction error is : 1329.08172902972
+ Decomposing the error :  
+        error     mse     bias diff.var actual.skew predicted.skew
+[1,] 1329.082 1766458 243.8673  2039184   0.6475087      0.1909109
+
+ Plotting the distributions of the actual and predicted values - green actual,red predicted

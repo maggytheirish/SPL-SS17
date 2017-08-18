@@ -24,7 +24,7 @@ Choose metric - rmse,user : rmse
 
 The prediction error is : 1329.08172902972
  Decomposing the error :  
-        error     mse     bias diff.var actual.skew predicted.skew
-[1,] 1329.082 1766458 243.8673  2039184   0.6475087      0.1909109
+        error     mse     bias     var percent.var actual.skew predicted.skew
+[1,] 1329.082 1766458 243.8673 1706987   0.9663331   0.6475087      0.1909109
 
  Plotting the distributions of the actual and predicted values - green actual,red predicted
